@@ -1,0 +1,16 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "gunicorn 'app:create_app()'"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+
+[[mounts]]
+source = "portal-data"
+destination = "/data"
+
+[env]
+DATABASE_PATH = "/data/portal.db"
