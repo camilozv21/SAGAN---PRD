@@ -45,7 +45,7 @@ ENV PORT=8000 \
     FLASK_APP=wsgi:app
 EXPOSE 8000
 
-# Shell form so ${PORT} (set by Railway) is expanded. Railway overrides this
-# CMD via railway.toml (preDeployCommand runs `flask db-init`, startCommand
-# runs gunicorn).
-CMD gunicorn "app:create_app()" --bind "0.0.0.0:${PORT}" --workers 2 --access-logfile - --error-logfile -
+# Shell form so ${PORT} (set by Railway) is expanded. Runs db-init first so
+# tables exist on the mounted /data volume — Railway's preDeployCommand runs
+# in a separate container without our volume mount, so init must happen here.
+CMD flask db-init && gunicorn "app:create_app()" --bind "0.0.0.0:${PORT}" --workers 2 --access-logfile - --error-logfile -

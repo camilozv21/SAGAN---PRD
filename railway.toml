@@ -3,7 +3,10 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-preDeployCommand = "flask db-init"
+# No startCommand or preDeployCommand — Dockerfile CMD handles both db-init
+# and serve in one shell so ${PORT} expands correctly AND init touches the
+# mounted /data volume (preDeployCommand runs in a separate container with
+# no volume mount, so a DB created there is thrown away).
 healthcheckPath = "/health"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"
