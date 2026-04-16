@@ -1,0 +1,40 @@
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Python virtualenv + cache
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Local state that must never leak into the image
+.env
+.env.*
+!.env.example
+instance/
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Editor / OS noise
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Docs that don't affect runtime
+docs/
+*.md
+!README.md
+
+# Claude/tool metadata
+.claude/

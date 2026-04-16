@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SACS — {{ client_name }}</title>
+<style>
+  :root {
+    --brand-green: #28a745;
+    --brand-green-dark: #208636;
+    --brand-red: #dc3545;
+    --brand-red-dark: #b02a37;
+    --brand-navy: #1e3a5f;
+    --brand-light-blue: #b3d1e6;
+    --ink: #1a1a1a;
+    --muted: #555;
+    --floor: #2f6a3d;
+  }
+
+  @page {
+    size: letter landscape;
+    margin: 0;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family: "Helvetica", "Arial", sans-serif;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    width: 11in;
+    height: 8.5in;
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+    background: #fff;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  /* SACS pages are basically SVG canvases. We set them to fill the page. */
+  svg.stage {
+    width: 11in;
+    height: 8.5in;
+    display: block;
+  }
+
+  /* Typography used inside <foreignObject>, if we ever need HTML text inside SVG.
+     Currently every text node is native SVG <text>. */
+</style>
+</head>
+<body>
+
+{# ======================================================================= #}
+{# PAGE 1 — Monthly cashflow                                                 #}
+{# ======================================================================= #}
+<div class="page">
+  <svg class="stage" viewBox="0 0 1100 850" xmlns="http://www.w3.org/2000/svg">
+
+    {# --- Arrowhead defs -------------------------------------------------- #}
+    <defs>
+      <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5"
+              markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#dc3545"/>
+      </marker>
+      <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5"
+              markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#1e3a5f"/>
+      </marker>
+      <marker id="arrow-black" viewBox="0 0 10 10" refX="9" refY="5"
+              markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#333"/>
+      </marker>
+      <marker id="arrow-green-in" viewBox="0 0 10 10" refX="9" refY="5"
+              markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#28a745"/>
+      </marker>
+    </defs>
+
+    {# --- Header row ------------------------------------------------------ #}
+    {# $ icon + salary breakdown (top-left) #}
+    <g transform="translate(60, 60)">
+      <text x="0" y="0" font-size="72" font-weight="900" fill="#1f7a35"
+            font-family="Georgia, 'Times New Roman', serif">$</text>
+      {# Downward green arrow under the $ #}
+      <path d="M 28 50 L 28 90 L 18 90 L 35 110 L 52 90 L 42 90 L 42 50 Z"
+            fill="#28a745" stroke="#1f7a35" stroke-width="1.5"/>
+      {# Salary breakdown text, to the right of the $ #}
+      <g transform="translate(90, 10)" font-family="Helvetica, Arial, sans-serif">
+        <text x="0" y="0" font-size="16" fill="#1f7a35" font-weight="600">
+          {{ salary_c1 | currency }} - Client 1
+        </text>
+        {% if has_client_2 %}
+        <text x="0" y="22" font-size="16" fill="#1f7a35" font-weight="600">
+          {{ salary_c2 | currency }} - Client 2
+        </text>
+        {% endif %}
+      </g>
+    </g>
+
+    {# Centered title #}
+    <g font-family="Helvetica, Arial, sans-serif">
+      <text x="550" y="55" text-anchor="middle" font-size="32" font-weight="800">
+        Simple Automated Cashflow System (SACS)
+      </text>
+      <text x="550" y="95" text-anchor="middle" font-size="22" font-weight="700"
+            fill="#333">{{ client_name }}</text>
+    </g>
+
+    {# Documents icon + "X = Monthly Expenses" (top-right) #}
+    <g transform="translate(960, 35)">
+      {# Simple stacked-documents glyph #}
+      <g stroke="#6c757d" stroke-width="1.5" fill="#eef1f4">
+        <rect x="0" y="0" width="44" height="56" rx="3"/>
+        <rect x="8" y="8" width="44" height="56" rx="3" fill="#f6f8fa"/>
+        <rect x="16" y="16" width="44" height="56" rx="3" fill="#ffffff"/>
+      </g>
+      <g stroke="#adb5bd" stroke-width="1" fill="none">
+        <line x1="22" y1="30" x2="54" y2="30"/>
+        <line x1="22" y1="40" x2="54" y2="40"/>
+        <line x1="22" y1="50" x2="54" y2="50"/>
+        <line x1="22" y1="60" x2="46" y2="60"/>
+      </g>
+      {# Caption below icon #}
+      <text x="32" y="100" text-anchor="middle" font-family="Helvetica, Arial, sans-serif"
+            font-size="14" fill="#333">X = Monthly</text>
+      <text x="32" y="117" text-anchor="middle" font-family="Helvetica, Arial, sans-serif"
+            font-size="14" fill="#333">Expenses</text>
+    </g>
+
+    {# ============================================================== #}
+    {# INFLOW (green, left)                                            #}
+    {# ============================================================== #}
+    <g>
+      {# Shadow under the circle for depth #}
+      <ellipse cx="215" cy="520" rx="140" ry="8" fill="#000" opacity="0.08"/>
+      <circle cx="215" cy="355" r="140" fill="#28a745"
+              stroke="#208636" stroke-width="2"/>
+      <text x="215" y="280" text-anchor="middle" fill="#fff" font-size="28"
+            font-weight="800" font-family="Helvetica, Arial, sans-serif">
+        INFLOW
+      </text>
+      {# White balance box — fixed width so layout never shifts on long numbers #}
+      <rect x="95" y="320" width="240" height="66" rx="6" fill="#fff"
+            stroke="#155724" stroke-width="1"/>
+      <text x="215" y="362" text-anchor="middle" font-size="28" font-weight="700"
+            font-family="Helvetica, Arial, sans-serif">
+        {{ inflow_total | currency }}
+      </text>
+      {# $1,000 Floor label #}
+      <text x="215" y="445" text-anchor="middle" font-size="14" font-weight="700"
+            fill="#2f6a3d" font-family="Helvetica, Arial, sans-serif">
+        $1,000 Floor
+      </text>
+    </g>
+
+    {# ============================================================== #}
+    {# OUTFLOW (red, right)                                            #}
+    {# ============================================================== #}
+    <g>
+      <ellipse cx="885" cy="520" rx="140" ry="8" fill="#000" opacity="0.08"/>
+      <circle cx="885" cy="355" r="140" fill="#dc3545"
+              stroke="#b02a37" stroke-width="2"/>
+      <text x="885" y="280" text-anchor="middle" fill="#fff" font-size="28"
+            font-weight="800" font-family="Helvetica, Arial, sans-serif">
+        OUTFLOW
+      </text>
+      <rect x="765" y="320" width="240" height="66" rx="6" fill="#fff"
+            stroke="#7f1d24" stroke-width="1"/>
+      <text x="885" y="362" text-anchor="middle" font-size="28" font-weight="700"
+            font-family="Helvetica, Arial, sans-serif">
+        {{ outflow | currency }}
+      </text>
+      <text x="885" y="445" text-anchor="middle" font-size="14" font-weight="700"
+            fill="#2f6a3d" font-family="Helvetica, Arial, sans-serif">
+        $1,000 Floor
+      </text>
+    </g>
+
+    {# ============================================================== #}
+    {# Red arrow INFLOW → OUTFLOW                                      #}
+    {# ============================================================== #}
+    <g font-family="Helvetica, Arial, sans-serif">
+      <line x1="360" y1="355" x2="740" y2="355"
+            stroke="#dc3545" stroke-width="5" marker-end="url(#arrow-red)"/>
+      <text x="550" y="335" text-anchor="middle" font-size="16" font-weight="700"
+            fill="#dc3545">
+        X = {{ outflow | currency }}/month<tspan fill="#dc3545">*</tspan>
+      </text>
+      <text x="550" y="378" text-anchor="middle" font-size="13" fill="#555">
+        Automated transfer on the {{ transfer_day }}th
+      </text>
+    </g>
+
+    {# ============================================================== #}
+    {# Decorative black curve from OUTFLOW → documents icon            #}
+    {# ============================================================== #}
+    <path d="M 1010 295 Q 1060 220 1005 110"
+          stroke="#555" stroke-width="1.5" fill="none"
+          marker-end="url(#arrow-black)"/>
+
+    {# ============================================================== #}
+    {# PRIVATE RESERVE (navy, bottom-center)                           #}
+    {# ============================================================== #}
+    <g>
+      <ellipse cx="550" cy="770" rx="120" ry="7" fill="#000" opacity="0.08"/>
+      <circle cx="550" cy="635" r="120" fill="#1e3a5f"
+              stroke="#11223a" stroke-width="2"/>
+      <text x="550" y="595" text-anchor="middle" fill="#fff" font-size="22"
+            font-weight="800" font-family="Helvetica, Arial, sans-serif">
+        PRIVATE
+      </text>
+      <text x="550" y="625" text-anchor="middle" fill="#fff" font-size="22"
+            font-weight="800" font-family="Helvetica, Arial, sans-serif">
+        RESERVE
+      </text>
+      {# Piggy bank glyph inside the navy circle #}
+      <g transform="translate(510, 645)">
+        <ellipse cx="40" cy="25" rx="40" ry="22" fill="#f4a6c4" stroke="#a85a7a" stroke-width="1.2"/>
+        <circle cx="10" cy="18" r="14" fill="#f4a6c4" stroke="#a85a7a" stroke-width="1.2"/>
+        <ellipse cx="2" cy="20" rx="5" ry="3" fill="#e085a5"/>
+        <circle cx="6" cy="16" r="1.6" fill="#1a1a1a"/>
+        <polygon points="16,6 22,6 20,0" fill="#e085a5" stroke="#a85a7a" stroke-width="0.8"/>
+        <rect x="32" y="8" width="16" height="3" fill="#5a1f37" rx="1"/>
+        <rect x="18" y="44" width="6" height="10" fill="#f4a6c4" stroke="#a85a7a" stroke-width="1"/>
+        <rect x="56" y="44" width="6" height="10" fill="#f4a6c4" stroke="#a85a7a" stroke-width="1"/>
+        {# Coin stack beside piggy #}
+        <circle cx="78" cy="34" r="6" fill="#f5c244" stroke="#a47a16" stroke-width="0.8"/>
+        <circle cx="78" cy="26" r="6" fill="#f5c244" stroke="#a47a16" stroke-width="0.8"/>
+        <text x="78" y="29" text-anchor="middle" font-size="8" font-weight="800" fill="#6d4e0d">$</text>
+      </g>
+    </g>
+
+    {# ============================================================== #}
+    {# Blue arrow INFLOW → PRIVATE RESERVE                             #}
+    {# ============================================================== #}
+    <path d="M 215 500 L 215 625 L 425 645"
+          stroke="#1e3a5f" stroke-width="4" fill="none"
+          marker-end="url(#arrow-blue)"/>
+    <text x="240" y="585" font-size="14" font-weight="700"
+          fill="#1e3a5f" font-family="Helvetica, Arial, sans-serif">
+      {{ excess | currency }}/mo<tspan>*</tspan>
+    </text>
+
+    {# ============================================================== #}
+    {# Footer                                                          #}
+    {# ============================================================== #}
+    <text x="550" y="820" text-anchor="middle" font-size="18" font-weight="800"
+          font-family="Helvetica, Arial, sans-serif" letter-spacing="3"
+          fill="#1a1a1a">
+      MONTHLY CASHFLOW
+    </text>
+  </svg>
+</div>
+
+{# ======================================================================= #}
+{# PAGE 2 — FICA ↔ Investment                                                #}
+{# ======================================================================= #}
+<div class="page">
+  <svg class="stage" viewBox="0 0 1100 850" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arrow-blue2" viewBox="0 0 10 10" refX="9" refY="5"
+              markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#1e3a5f"/>
+      </marker>
+      <marker id="arrow-blue2-start" viewBox="0 0 10 10" refX="1" refY="5"
+              markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 10 0 L 0 5 L 10 10 z" fill="#1e3a5f"/>
+      </marker>
+    </defs>
+
+    {# Vertical dashed separator echoing the screenshot #}
+    <line x1="550" y1="50" x2="550" y2="200" stroke="#8aa3bd"
+          stroke-width="1.5" stroke-dasharray="6 6"/>
+
+    {# Title #}
+    <text x="550" y="130" text-anchor="middle"
+          font-family="Helvetica, Arial, sans-serif"
+          font-size="34" font-weight="800">
+      Simple Automated Cashflow System (SACS)
+    </text>
+
+    {# --- FICA ACCOUNT (light blue, left) ------------------------------- #}
+    <g>
+      <ellipse cx="340" cy="620" rx="170" ry="9" fill="#000" opacity="0.08"/>
+      <circle cx="340" cy="450" r="170" fill="#b3d1e6"
+              stroke="#6e96b5" stroke-width="2"/>
+      <text x="340" y="395" text-anchor="middle" fill="#1a2a3a" font-size="28"
+            font-weight="800" font-family="Helvetica, Arial, sans-serif">
+        FICA
+      </text>
+      <text x="340" y="435" text-anchor="middle" fill="#1a2a3a" font-size="28"
+            font-weight="800" font-family="Helvetica, Arial, sans-serif">
+        ACCOUNT
+      </text>
+      <rect x="220" y="470" width="240" height="66" rx="6"
+            fill="#eef5fb" stroke="#6e96b5" stroke-width="1"/>
+      <text x="340" y="513" text-anchor="middle" font-size="26" font-weight="700"
+            font-family="Helvetica, Arial, sans-serif">
+        {{ private_reserve_balance | currency }}
+      </text>
+      <text x="340" y="670" text-anchor="middle" font-size="16"
+            font-family="Helvetica, Arial, sans-serif" fill="#333">
+        6X Monthly Expenses + Deductibles
+      </text>
+    </g>
+
+    {# --- INVESTMENT ACCOUNT (navy, right) ------------------------------ #}
+    <g>
+      <ellipse cx="760" cy="620" rx="170" ry="9" fill="#000" opacity="0.08"/>
+      <circle cx="760" cy="450" r="170" fill="#1e3a5f"
+              stroke="#0f2239" stroke-width="2"/>
+      <text x="760" y="395" text-anchor="middle" fill="#fff" font-size="28"
+            font-weight="800" font-family="Helvetica, Arial, sans-serif">
+        INVESTMENT
+      </text>
+      <text x="760" y="435" text-anchor="middle" fill="#fff" font-size="28"
+            font-weight="800" font-family="Helvetica, Arial, sans-serif">
+        ACCOUNT
+      </text>
+      <rect x="640" y="470" width="240" height="66" rx="6"
+            fill="#f3f6fa" stroke="#0f2239" stroke-width="1"/>
+      <text x="760" y="513" text-anchor="middle" font-size="26" font-weight="700"
+            font-family="Helvetica, Arial, sans-serif">
+        {{ schwab_balance | currency }}+
+      </text>
+      <text x="760" y="670" text-anchor="middle" font-size="16"
+            font-family="Helvetica, Arial, sans-serif" fill="#333">
+        Remainder
+      </text>
+    </g>
+
+    {# Bidirectional arrow between the two circles #}
+    <line x1="520" y1="450" x2="580" y2="450"
+          stroke="#1e3a5f" stroke-width="6"
+          marker-end="url(#arrow-blue2)" marker-start="url(#arrow-blue2-start)"/>
+  </svg>
+</div>
+
+</body>
+</html>

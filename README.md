@@ -13,50 +13,57 @@ Internal portal for EF — a financial planning firm — to enter client financi
 
 ## Local Development
 
+The app runs from a single Docker image that is identical to what Railway
+builds. This removes per-OS native-library setup (WeasyPrint's pango/cairo
+dependencies) and keeps local and production behavior in sync.
+
 ### Prerequisites
-- Python 3.11+
-- WeasyPrint system dependencies. On Windows follow the WeasyPrint install docs (GTK3 runtime); on macOS `brew install pango`; on Debian/Ubuntu `apt install libpango-1.0-0 libpangoft2-1.0-0`.
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows / macOS)
+  or Docker Engine + Compose plugin (Linux)
 
 ### Setup
 ```bash
-# 1. Create a virtual environment
-python -m venv venv
-# Windows:
-venv\Scripts\activate
-# macOS / Linux:
-source venv/bin/activate
-
-# 2. Install dependencies
-pip install -r requirements.txt
-
-# 3. Copy env template and fill in values
+# 1. Copy env template and fill in values
 cp .env.example .env    # Windows: copy .env.example .env
 # Edit .env — in particular generate bcrypt hashes for USER_CREDENTIALS.
 
-# 4. Run the app
-flask --app wsgi run --debug
-# Or:
-python wsgi.py
+# 2. Build and start the app
+docker compose up --build
 ```
 
-Visit `http://localhost:5000/health` to verify the server is up.
+Visit `http://localhost:5000/health` to verify the server is up. The compose
+setup runs `flask db-init` on start and uses `flask --debug`, so code edits
+hot-reload inside the container. The SQLite DB lives in the named volume
+`portal-data` and survives `docker compose down`.
 
 ### Tests
+Run pytest inside the container:
 ```bash
+docker compose run --rm web pytest
+```
+
+Or, if you prefer a venv for quick pure-Python feedback (tests that hit
+WeasyPrint will skip without the GTK libs):
+```bash
+python -m venv venv && venv/Scripts/activate   # Windows
+pip install -r requirements.txt
 pytest
 ```
 
 ## Deploying to Railway
 
 1. Create a new Railway project from this repository.
-2. Railway auto-detects `requirements.txt` and `Procfile` via Nixpacks.
-3. Add a persistent volume named `portal-data` mounted at `/data` (already declared in `railway.toml`).
+2. Railway detects the `Dockerfile` (via `railway.toml`) and builds the same
+   image you use locally — no additional system deps needed.
+3. Add a persistent volume named `portal-data` mounted at `/data` (already
+   declared in `railway.toml`).
 4. Configure these environment variables in the Railway dashboard:
    - `FLASK_ENV=production`
    - `SECRET_KEY` (long random string)
    - `USER_CREDENTIALS` (JSON: `{"user": "<bcrypt-hash>", ...}`)
    - `DATABASE_PATH=/data/portal.db` (already set in `railway.toml`)
-5. Deploy. Railway runs `gunicorn "app:create_app()"` and health-checks `/health`.
+5. Deploy. Railway uses the `startCommand` from `railway.toml`
+   (`flask db-init && gunicorn 'app:create_app()'`) and health-checks `/health`.
 
 ## Folder Structure
 
@@ -77,7 +84,8 @@ app/
     reports/           Report entry + preview views
 config.py              Config classes (Dev / Prod)
 wsgi.py                Entry point for gunicorn / `flask run`
-Procfile               Railway start command
+Dockerfile             Image used both locally (compose) and on Railway
+docker-compose.yml     Local dev orchestration (hot-reload, DB volume)
 railway.toml           Railway deploy config + volume mount
 requirements.txt
 .env.example           Template for local .env

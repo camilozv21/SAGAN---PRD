@@ -38,9 +38,11 @@
 
 <section class="detail-section">
     <h2>PDFs</h2>
-    <p class="muted">PDF generation arrives in Phase 4 &amp; 5. For now, a report snapshot has been persisted and its account balances are queryable.</p>
     <p>
-        <span class="btn btn-ghost" aria-disabled="true" style="opacity:.55; pointer-events:none;">SACS PDF (coming soon)</span>
+        <a class="btn btn-primary"
+           href="{{ url_for('reports.download_sacs', client_id=client.id, report_id=report.id) }}">
+            Download SACS
+        </a>
         <span class="btn btn-ghost" aria-disabled="true" style="opacity:.55; pointer-events:none;">TCC PDF (coming soon)</span>
     </p>
 </section>

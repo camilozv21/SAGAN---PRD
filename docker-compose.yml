@@ -1,0 +1,24 @@
+# Local dev: `docker compose up --build`
+# App available at http://localhost:5000
+# - Mounts the working tree into /app so edits hot-reload via flask --debug
+# - Named volume 'portal-data' holds the SQLite DB (survives rebuilds)
+services:
+  web:
+    build: .
+    image: aw-portal:dev
+    ports:
+      - "5000:8000"
+    env_file:
+      - .env
+    environment:
+      FLASK_ENV: development
+      DATABASE_PATH: /data/portal.db
+      PORT: "8000"
+    volumes:
+      - ./:/app
+      - portal-data:/data
+    command: >
+      sh -c "flask db-init && flask --app wsgi run --host=0.0.0.0 --port=8000 --debug"
+
+volumes:
+  portal-data:

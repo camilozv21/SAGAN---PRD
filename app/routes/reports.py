@@ -10,6 +10,7 @@ from decimal import Decimal, InvalidOperation
 
 from flask import (
     Blueprint,
+    Response,
     abort,
     flash,
     redirect,
@@ -28,6 +29,7 @@ from app.models import (
     QuarterlyReport,
 )
 from app.services.calculations import calculate_target
+from app.services.pdf_generator import generate_sacs_pdf, sacs_filename
 
 reports_bp = Blueprint("reports", __name__, url_prefix="/clients/<int:client_id>")
 
@@ -329,4 +331,22 @@ def view_report(client_id, report_id):
         client=client,
         display_name=_client_display_name(client),
         report=report,
+    )
+
+
+@reports_bp.route("/reports/<int:report_id>/sacs.pdf", methods=["GET"])
+def download_sacs(client_id, report_id):
+    client = Client.query.get(client_id)
+    if client is None:
+        abort(404)
+    report = QuarterlyReport.query.get(report_id)
+    if report is None or report.client_id != client.id:
+        abort(404)
+
+    pdf_bytes = generate_sacs_pdf(report.id)
+    filename = sacs_filename(report)
+    return Response(
+        pdf_bytes,
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
