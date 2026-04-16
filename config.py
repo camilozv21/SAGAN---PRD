@@ -1,6 +1,10 @@
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-me")
@@ -10,7 +14,10 @@ class Config:
 
     @property
     def SQLALCHEMY_DATABASE_URI(self):
-        return f"sqlite:///{self.DATABASE_PATH}"
+        p = Path(self.DATABASE_PATH)
+        if not p.is_absolute():
+            p = Path(__file__).parent / p
+        return f"sqlite:///{p.resolve().as_posix()}"
 
 
 class DevConfig(Config):
