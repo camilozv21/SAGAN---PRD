@@ -3,6 +3,7 @@ builder = "NIXPACKS"
 
 [deploy]
 startCommand = "gunicorn 'app:create_app()'"
+preDeployCommand = "flask db-init"
 healthcheckPath = "/health"
 healthcheckTimeout = 30
 restartPolicyType = "ON_FAILURE"
