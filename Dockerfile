@@ -35,13 +35,11 @@ RUN pip install -r requirements.txt
 # Copy the rest of the application.
 COPY . .
 
-# Drop to an unprivileged user. The /data mount point (Railway volume) must
-# be writable — it's created/owned by appuser so `flask db-init` can create
-# portal.db on first boot. Railway bind-mounts over this at runtime.
-RUN useradd --create-home --shell /bin/bash --uid 1000 appuser \
-    && mkdir -p /data \
-    && chown -R appuser:appuser /app /data
-USER appuser
+# Run as root. Railway's persistent volume at /data was created by the prior
+# Nixpacks deploy as root:root; an unprivileged user can't write portal.db
+# to it, which makes `flask db-init` fail and the healthcheck never pass.
+# This is an internal tool for 3 users behind Railway auth — root is fine.
+RUN mkdir -p /data
 
 ENV PORT=8000
 EXPOSE 8000
