@@ -21,8 +21,13 @@ from app.models import (
 )
 
 
-SAMPLE_ADMIN_EMAIL = "admin@example.com"
-SAMPLE_ADMIN_PASSWORD = "changeme"
+# The 3 team members — seeded automatically on db-init.
+# Passwords can be changed later via `flask create-user` or direct DB update.
+TEAM_USERS = [
+    {"email": "andrew@aw.com", "name": "Andrew", "password": "andrew2025!", "is_admin": True},
+    {"email": "rebecca@aw.com", "name": "Rebecca", "password": "rebecca2025!", "is_admin": False},
+    {"email": "maryann@aw.com", "name": "Maryann", "password": "maryann2025!", "is_admin": False},
+]
 
 
 def _d(value):
@@ -149,19 +154,27 @@ def _seed_sample_client():
     return client
 
 
-def _seed_admin_user():
-    existing = User.query.filter_by(email=SAMPLE_ADMIN_EMAIL).first()
-    if existing:
-        return existing
-    user = User(email=SAMPLE_ADMIN_EMAIL, name="Admin", is_admin=True)
-    user.set_password(SAMPLE_ADMIN_PASSWORD)
-    db.session.add(user)
+def _seed_team_users():
+    """Create the 3 team users if they don't already exist."""
+    created = []
+    for spec in TEAM_USERS:
+        existing = User.query.filter_by(email=spec["email"]).first()
+        if existing:
+            continue
+        user = User(
+            email=spec["email"],
+            name=spec["name"],
+            is_admin=spec["is_admin"],
+        )
+        user.set_password(spec["password"])
+        db.session.add(user)
+        created.append(spec["email"])
     db.session.flush()
-    return user
+    return created
 
 
 def init_database():
-    """Create tables (idempotent) and seed sample data."""
+    """Create tables (idempotent) and seed sample data + team users."""
     db.create_all()
     # Apply incremental migrations for columns added after initial schema.
     # Must run before any queries so existing databases get new columns
@@ -169,12 +182,11 @@ def init_database():
     from migrations.phase6_add_columns import migrate as phase6_migrate
     phase6_migrate()
     client = _seed_sample_client()
-    user = _seed_admin_user()
+    created_users = _seed_team_users()
     db.session.commit()
     return {
         "sample_client_id": client.id,
-        "admin_user_id": user.id,
-        "admin_email": SAMPLE_ADMIN_EMAIL,
+        "users_created": created_users or "(already existed)",
     }
 
 

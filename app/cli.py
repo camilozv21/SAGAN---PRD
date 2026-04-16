@@ -47,3 +47,27 @@ def register_cli(app):
         click.echo("Database re-initialized.")
         for key, value in summary.items():
             click.echo(f"  {key}: {value}")
+
+    @app.cli.command("create-user")
+    @click.option("--email", prompt=True, help="User email address.")
+    @click.option("--name", prompt=True, help="Display name.")
+    @click.option("--admin", is_flag=True, default=False, help="Grant admin role.")
+    @click.option("--password", prompt=True, hide_input=True,
+                  confirmation_prompt=True, help="User password.")
+    @with_appcontext
+    def create_user_command(email, name, admin, password):
+        """Create a new portal user with a bcrypt-hashed password."""
+        from app import db
+        from app.models import User
+
+        email = email.strip().lower()
+        existing = User.query.filter_by(email=email).first()
+        if existing:
+            click.echo(f"Error: user with email '{email}' already exists.")
+            raise SystemExit(1)
+
+        user = User(email=email, name=name.strip(), is_admin=admin)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        click.echo(f"User created: {user.name} <{user.email}> (admin={admin})")

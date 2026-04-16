@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In &mdash; AW Client Report Portal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/clients.css') }}">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: var(--brand-bg);
+        }
+        .site-header, .site-footer, .site-main { display: none; }
+
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            background: var(--brand-surface);
+            border: 1px solid var(--brand-border);
+            border-radius: var(--radius-md);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            padding: 2.5rem 2rem 2rem;
+        }
+        .login-logo {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .login-logo .logo-mark {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            background-color: var(--brand-primary);
+            color: #fff;
+            border-radius: 12px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+        .login-logo h1 {
+            margin: 0.75rem 0 0.25rem;
+            font-size: 1.25rem;
+            color: var(--brand-primary);
+        }
+        .login-logo p {
+            margin: 0;
+            color: var(--brand-text-muted);
+            font-size: 0.85rem;
+        }
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .login-form .field input {
+            width: 100%;
+            padding: 0.6rem 0.75rem;
+            font-size: 0.95rem;
+            border: 1px solid var(--brand-border);
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            color: var(--brand-text);
+            background: #fff;
+        }
+        .login-form .field input:focus {
+            outline: 2px solid var(--brand-accent);
+            outline-offset: -1px;
+            border-color: var(--brand-accent);
+        }
+        .login-form .field span {
+            display: block;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--brand-text-muted);
+            margin-bottom: 0.25rem;
+        }
+        .login-submit {
+            width: 100%;
+            padding: 0.65rem;
+            background-color: var(--brand-primary);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+        .login-submit:hover {
+            background-color: var(--brand-primary-hover);
+        }
+        .login-submit:focus-visible {
+            outline: 2px solid var(--brand-accent);
+            outline-offset: 2px;
+        }
+
+        /* --- Credentials banner --- */
+        .creds-banner {
+            margin-top: 1.5rem;
+            background: #eef4fb;
+            border: 2px solid var(--brand-accent);
+            border-radius: var(--radius-md);
+            padding: 1rem 1.1rem;
+        }
+        .creds-banner h3 {
+            margin: 0 0 0.6rem;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--brand-accent);
+            text-align: center;
+        }
+        .creds-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+        }
+        .creds-table th {
+            text-align: left;
+            padding: 0.3rem 0.4rem;
+            color: var(--brand-text-muted);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border-bottom: 1px solid var(--brand-border);
+        }
+        .creds-table td {
+            padding: 0.35rem 0.4rem;
+            border-bottom: 1px solid #dce8f3;
+        }
+        .creds-table tr:last-child td {
+            border-bottom: none;
+        }
+        .creds-table .mono {
+            font-family: "SF Mono", "Consolas", "Monaco", monospace;
+            font-size: 0.78rem;
+            color: var(--brand-primary);
+        }
+        .role-badge {
+            display: inline-block;
+            padding: 0.1rem 0.45rem;
+            border-radius: 999px;
+            font-size: 0.68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .role-admin {
+            background: #1e3a5f;
+            color: #fff;
+        }
+        .role-user {
+            background: #d8dee6;
+            color: #3a4a5c;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="login-logo">
+            <div class="logo-mark">EF</div>
+            <h1>AW Client Report Portal</h1>
+            <p>Sign in to continue</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="flash-stack" style="margin-bottom:1rem">
+                {% for category, message in messages %}
+                <div class="flash flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        {% endwith %}
+
+        <form class="login-form" method="post" action="{{ url_for('auth.login') }}">
+            <div class="field">
+                <span>Email</span>
+                <input type="email" name="email" value="{{ email }}"
+                       required autofocus autocomplete="email"
+                       placeholder="you@example.com">
+            </div>
+            <div class="field">
+                <span>Password</span>
+                <input type="password" name="password" required
+                       autocomplete="current-password" placeholder="Enter password">
+            </div>
+            <button type="submit" class="login-submit">Sign In</button>
+        </form>
+
+        <div class="creds-banner">
+            <h3>Team Accounts</h3>
+            <table class="creds-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Password</th>
+                        <th>Role</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Andrew</strong></td>
+                        <td class="mono">andrew@aw.com</td>
+                        <td class="mono">andrew2025!</td>
+                        <td><span class="role-badge role-admin">Admin</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Rebecca</strong></td>
+                        <td class="mono">rebecca@aw.com</td>
+                        <td class="mono">rebecca2025!</td>
+                        <td><span class="role-badge role-user">User</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Maryann</strong></td>
+                        <td class="mono">maryann@aw.com</td>
+                        <td class="mono">maryann2025!</td>
+                        <td><span class="role-badge role-user">User</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{% extends "base/base.html" %}
+
+{% block title %}Server Error &mdash; AW{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <div class="error-code">500</div>
+    <h1>Something Went Wrong</h1>
+    <p>An unexpected error occurred. Please try again or contact the admin if this persists.</p>
+    <a class="btn btn-primary" href="{{ url_for('clients.list_clients') }}">Go to Clients</a>
+</div>
+{% endblock %}

@@ -8,7 +8,7 @@ Internal portal for EF — a financial planning firm — to enter client financi
 - **Frontend**: HTML + CSS + vanilla JavaScript (no frameworks)
 - **Database**: SQLite (persisted on a Railway volume in production)
 - **PDF generation**: WeasyPrint
-- **Auth**: bcrypt-hashed credentials from env (3 internal users)
+- **Auth**: Flask-Login + bcrypt (users managed via CLI)
 - **Hosting**: Railway
 
 ## Local Development
@@ -23,18 +23,27 @@ dependencies) and keeps local and production behavior in sync.
 
 ### Setup
 ```bash
-# 1. Copy env template and fill in values
+# 1. Copy env template
 cp .env.example .env    # Windows: copy .env.example .env
-# Edit .env — in particular generate bcrypt hashes for USER_CREDENTIALS.
 
 # 2. Build and start the app
 docker compose up --build
 ```
 
-Visit `http://localhost:5000/health` to verify the server is up. The compose
-setup runs `flask db-init` on start and uses `flask --debug`, so code edits
-hot-reload inside the container. The SQLite DB lives in the named volume
-`portal-data` and survives `docker compose down`.
+Visit `http://localhost:5000/health` to verify the server is up.
+
+### Creating Users
+Users are managed via the Flask CLI (not hardcoded):
+```bash
+# Inside the container or with your venv activated:
+flask create-user --email andrew@firm.com --name "Andrew"
+flask create-user --email rebecca@firm.com --name "Rebecca"
+flask create-user --email maryann@firm.com --name "Maryann"
+# Each command prompts for a password interactively.
+
+# To grant admin (audit log access):
+flask create-user --email andrew@firm.com --name "Andrew" --admin
+```
 
 ### Tests
 Run pytest inside the container:
@@ -59,43 +68,58 @@ pytest
    declared in `railway.toml`).
 4. Configure these environment variables in the Railway dashboard:
    - `FLASK_ENV=production`
-   - `SECRET_KEY` (long random string)
-   - `USER_CREDENTIALS` (JSON: `{"user": "<bcrypt-hash>", ...}`)
+   - `SECRET_KEY` (long random string — `python -c "import secrets; print(secrets.token_hex(32))"`)
    - `DATABASE_PATH=/data/portal.db` (already set in `railway.toml`)
-5. Deploy. Railway uses the `startCommand` from `railway.toml`
-   (`flask db-init && gunicorn 'app:create_app()'`) and health-checks `/health`.
+5. Deploy. The Dockerfile CMD runs `flask db-init && gunicorn ...` and
+   health-checks `/health`.
+6. After first deploy, create users:
+   ```bash
+   railway run flask create-user --email andrew@firm.com --name "Andrew" --admin
+   railway run flask create-user --email rebecca@firm.com --name "Rebecca"
+   railway run flask create-user --email maryann@firm.com --name "Maryann"
+   ```
+
+## Database Backups
+
+```bash
+# Run manually or via cron:
+python scripts/backup_db.py --source /data/portal.db --dest /data/backups
+
+# Options:
+#   --retention-days 30  (default: remove backups older than 30 days)
+```
 
 ## Folder Structure
 
 ```
 app/
-  __init__.py          Flask app factory
+  __init__.py          Flask app factory + auth middleware
   models/              SQLAlchemy models
-  routes/              Blueprints by domain (clients, reports, auth)
-  services/            Business logic (calculations, report assembly)
-  pdf/                 WeasyPrint templates + PDF generation
+  routes/              Blueprints: auth, clients, reports, admin
+  services/            Business logic (calculations, PDF generation)
+  pdf/templates/       WeasyPrint HTML templates for SACS/TCC PDFs
   static/
     css/               Stylesheets (main.css with brand variables)
     js/                Vanilla JS modules (one per feature)
-    img/               Static images / icons
   templates/
+    auth/              Login page
     base/              Base layout
-    clients/           Client management views
-    reports/           Report entry + preview views
+    clients/           Client CRUD views
+    reports/           Report entry + detail views
+    errors/            404, 500 error pages
+    help/              User guide
 config.py              Config classes (Dev / Prod)
-wsgi.py                Entry point for gunicorn / `flask run`
-Dockerfile             Image used both locally (compose) and on Railway
-docker-compose.yml     Local dev orchestration (hot-reload, DB volume)
+wsgi.py                Entry point for gunicorn / flask run
+scripts/
+  backup_db.py         SQLite backup with retention cleanup
+Dockerfile             Image used both locally and on Railway
+docker-compose.yml     Local dev (hot-reload, DB volume)
 railway.toml           Railway deploy config + volume mount
 requirements.txt
-.env.example           Template for local .env
+.env.example
 
-docs/
-  references/          Sample SACS/TCC PDFs + data point list screenshots
-  phases/              Phase plans & deliverables (see docs/phases/README.md)
-
-tests/                 pytest suite
-migrations/            Schema migrations (added once models exist)
+tests/                 pytest suite (calculations, auth, PDF, integration)
+migrations/            Schema migrations
 ```
 
 ## Project Context

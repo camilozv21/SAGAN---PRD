@@ -256,10 +256,10 @@ class TestZipDownload:
 
         report = QuarterlyReport.query.filter_by(client_id=client.id).first()
 
-        # Skip if WeasyPrint not available
-        try:
-            resp = http.get(f"/clients/{client.id}/reports/{report.id}/both.zip")
-        except Exception:
+        resp = http.get(f"/clients/{client.id}/reports/{report.id}/both.zip")
+
+        if resp.status_code == 302:
+            # WeasyPrint not available — route caught the error and redirected
             import pytest
             pytest.skip("WeasyPrint not available in test environment")
 

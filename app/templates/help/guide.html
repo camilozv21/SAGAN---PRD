@@ -1,0 +1,106 @@
+{% extends "base/base.html" %}
+
+{% block title %}Help &mdash; AW Client Report Portal{% endblock %}
+
+{% block content %}
+<nav class="breadcrumbs">
+    <a href="{{ url_for('clients.list_clients') }}">Clients</a>
+    <span class="bc-sep">/</span>
+    <span>Help</span>
+</nav>
+
+<div class="page-header">
+    <h1>User Guide</h1>
+</div>
+
+<section class="detail-section">
+    <h2>1. Adding a New Client</h2>
+    <ol class="guide-steps">
+        <li>Click <strong>Clients</strong> in the top navigation bar.</li>
+        <li>Click the <strong>+ New client</strong> button.</li>
+        <li>Fill in the household information:
+            <ul>
+                <li><strong>Client 1 name and salary</strong> (required).</li>
+                <li>Check <strong>Married</strong> to add a second spouse.</li>
+                <li>Set the <strong>Transfer day</strong> (day of month for automated transfer, usually 28).</li>
+            </ul>
+        </li>
+        <li>Add <strong>retirement accounts</strong>, <strong>non-retirement accounts</strong>, <strong>liabilities</strong>, and <strong>insurance policies</strong> using the + Add buttons in each section.</li>
+        <li>Enter the <strong>Agreed monthly outflow</strong> in the Financial Settings section.</li>
+        <li>Click <strong>Save Client</strong>.</li>
+    </ol>
+</section>
+
+<section class="detail-section">
+    <h2>2. Generating a Quarterly Report</h2>
+    <ol class="guide-steps">
+        <li>Navigate to the client's detail page (click their name from the Clients list).</li>
+        <li>Click <strong>+ New report</strong>.</li>
+        <li>Set the <strong>Report date</strong> (e.g., the last day of the quarter).</li>
+        <li>Confirm or update the <strong>Client 1 salary</strong>, <strong>Client 2 salary</strong>, and <strong>Monthly outflow</strong>.</li>
+        <li>Enter the <strong>current balance</strong> and <strong>as-of date</strong> for every account.
+            <ul>
+                <li>Use the <strong>Use last</strong> button to prefill from the previous report.</li>
+                <li>Check <strong>Outdated</strong> if you don't have current information (an asterisk will appear on the PDF).</li>
+                <li>For investment accounts, enter the <strong>Cash balance</strong> if applicable.</li>
+            </ul>
+        </li>
+        <li>Enter the <strong>current balance</strong> for each liability.</li>
+        <li>Watch the <strong>Live Preview</strong> panel on the right to verify totals before saving.</li>
+        <li>Click <strong>Save Report</strong>.</li>
+    </ol>
+</section>
+
+<section class="detail-section">
+    <h2>3. Downloading PDFs</h2>
+    <ol class="guide-steps">
+        <li>After saving a report, you'll be taken to the report detail page.</li>
+        <li>Click <strong>Download SACS PDF</strong> for the cashflow diagram (2 pages).</li>
+        <li>Click <strong>Download TCC PDF</strong> for the net worth diagram (1 page).</li>
+        <li>Click <strong>Download Both (ZIP)</strong> to get both PDFs in a single download.</li>
+    </ol>
+    <p class="muted" style="margin-top:0.5rem">
+        You can also download PDFs from the client detail page under <strong>Reports history</strong>.
+    </p>
+</section>
+
+<section class="detail-section">
+    <h2>4. Re-downloading an Old Report</h2>
+    <ol class="guide-steps">
+        <li>Go to the client's detail page.</li>
+        <li>Scroll to <strong>Reports history</strong>.</li>
+        <li>Click <strong>View</strong> next to the report date.</li>
+        <li>Download the PDFs from there. Old reports use the original data snapshot &mdash; they are never affected by edits to the client.</li>
+    </ol>
+</section>
+
+<section class="detail-section">
+    <h2>5. Editing a Client / Fixing Mistakes</h2>
+    <ol class="guide-steps">
+        <li>Go to the client's detail page and click <strong>Edit</strong>.</li>
+        <li>Make your changes and click <strong>Save Client</strong>.</li>
+        <li>If a report was already generated with incorrect data, generate a <strong>new report</strong> with the corrected balances. Old reports remain unchanged as a historical record.</li>
+    </ol>
+</section>
+
+<section class="detail-section">
+    <h2>6. Understanding the Numbers</h2>
+    <dl class="info-list" style="gap:0.5rem 1.5rem">
+        <dt>Inflow</dt>
+        <dd>Client 1 salary + Client 2 salary</dd>
+        <dt>Excess</dt>
+        <dd>Inflow &minus; Outflow (transferred to Private Reserve)</dd>
+        <dt>Private Reserve Target</dt>
+        <dd>6 &times; Monthly Outflow + Sum of all insurance deductibles</dd>
+        <dt>Grand Total Net Worth</dt>
+        <dd>C1 Retirement + C2 Retirement + Non-Retirement + Trust</dd>
+        <dt>Liabilities</dt>
+        <dd>Shown separately &mdash; never subtracted from net worth</dd>
+    </dl>
+</section>
+
+<section class="detail-section">
+    <h2>Need Help?</h2>
+    <p>Contact the system administrator if you encounter any issues or have questions.</p>
+</section>
+{% endblock %}

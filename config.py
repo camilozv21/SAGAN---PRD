@@ -10,7 +10,6 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-me")
     DATABASE_PATH = os.environ.get("DATABASE_PATH", str(Path(__file__).parent / "instance" / "portal.db"))
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    USER_CREDENTIALS = os.environ.get("USER_CREDENTIALS", "{}")
 
     @property
     def SQLALCHEMY_DATABASE_URI(self):
@@ -28,6 +27,11 @@ class DevConfig(Config):
 class ProdConfig(Config):
     DEBUG = False
     ENV = "production"
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    REMEMBER_COOKIE_SECURE = True
+    REMEMBER_COOKIE_HTTPONLY = True
 
 
 def get_config():

@@ -20,9 +20,9 @@ from flask import (
     redirect,
     render_template,
     request,
-    session as flask_session,
     url_for,
 )
+from flask_login import current_user
 
 from app import db
 from app.models import (
@@ -44,7 +44,7 @@ from app.services.pdf_generator import (
 
 
 def _log_audit(action, report_id=None, detail=None):
-    user_id = flask_session.get("user_id")
+    user_id = current_user.id if current_user.is_authenticated else None
     entry = AuditLog(
         user_id=user_id,
         report_id=report_id,
@@ -403,7 +403,15 @@ def download_sacs(client_id, report_id):
     if report is None or report.client_id != client.id:
         abort(404)
 
-    pdf_bytes = generate_sacs_pdf(report.id)
+    try:
+        pdf_bytes = generate_sacs_pdf(report.id)
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).error("SACS PDF generation failed: %s", exc)
+        flash("Could not generate the SACS PDF. Please try again.", "error")
+        return redirect(url_for("reports.view_report",
+                                client_id=client.id, report_id=report.id))
+
     filename = sacs_filename(report)
     _log_audit("download_sacs", report.id, filename)
     return Response(
@@ -422,7 +430,15 @@ def download_tcc(client_id, report_id):
     if report is None or report.client_id != client.id:
         abort(404)
 
-    pdf_bytes = generate_tcc_pdf(report.id)
+    try:
+        pdf_bytes = generate_tcc_pdf(report.id)
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).error("TCC PDF generation failed: %s", exc)
+        flash("Could not generate the TCC PDF. Please try again.", "error")
+        return redirect(url_for("reports.view_report",
+                                client_id=client.id, report_id=report.id))
+
     filename = tcc_filename(report)
     _log_audit("download_tcc", report.id, filename)
     return Response(
@@ -445,8 +461,15 @@ def download_both(client_id, report_id):
     if report is None or report.client_id != client.id:
         abort(404)
 
-    sacs_bytes = generate_sacs_pdf(report.id)
-    tcc_bytes = generate_tcc_pdf(report.id)
+    try:
+        sacs_bytes = generate_sacs_pdf(report.id)
+        tcc_bytes = generate_tcc_pdf(report.id)
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).error("ZIP PDF generation failed: %s", exc)
+        flash("Could not generate the PDFs. Please try again.", "error")
+        return redirect(url_for("reports.view_report",
+                                client_id=client.id, report_id=report.id))
 
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:

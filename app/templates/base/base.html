@@ -11,12 +11,20 @@
 <body>
     <header class="site-header">
         <div class="container">
-            <a href="/" class="brand">AW Client Report Portal</a>
+            <a href="/" class="brand">
+                <span class="brand-mark">EF</span>
+                AW Client Report Portal
+            </a>
             <nav class="main-nav">
                 {% block nav %}
+                {% if current_user.is_authenticated %}
                 <a href="{{ url_for('clients.list_clients') }}">Clients</a>
-                {% if session.get('user_id') %}
+                {% if current_user.is_admin %}
                 <a href="{{ url_for('admin.audit_log') }}">Audit</a>
+                {% endif %}
+                <a href="{{ url_for('help_page') }}">Help</a>
+                <span class="nav-user">{{ current_user.name or current_user.email }}</span>
+                <a href="{{ url_for('auth.logout') }}">Logout</a>
                 {% endif %}
                 {% endblock %}
             </nav>

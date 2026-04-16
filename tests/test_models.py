@@ -176,7 +176,8 @@ def test_user_password_roundtrip(session):
     session.add(user)
     session.commit()
 
-    fetched = User.query.first()
+    fetched = User.query.filter_by(email="someone@example.com").first()
+    assert fetched is not None
     assert fetched.email == "someone@example.com"
     assert fetched.check_password("hunter2") is True
     assert fetched.check_password("nope") is False
