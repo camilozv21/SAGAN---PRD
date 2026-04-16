@@ -20,3 +20,9 @@ def app(tmp_path):
 @pytest.fixture
 def session(app):
     return db.session
+
+
+@pytest.fixture
+def http(app):
+    """Flask test client. Named `http` to avoid colliding with the Client model."""
+    return app.test_client()

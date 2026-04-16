@@ -1,0 +1,298 @@
+{% extends "base/base.html" %}
+
+{% set editing = client is not none %}
+
+{% block title %}
+{% if editing %}Edit client &mdash; AW{% else %}New client &mdash; AW{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{% if editing %}Edit client{% else %}New client{% endif %}</h1>
+    <a class="btn btn-ghost" href="{{ url_for('clients.list_clients') }}">&larr; Back to list</a>
+</div>
+
+<form id="client-form"
+      class="client-form"
+      method="post"
+      action="{% if editing %}{{ url_for('clients.update_client', client_id=client.id) }}{% else %}{{ url_for('clients.create_client') }}{% endif %}"
+      novalidate>
+
+    <!-- Templates for dynamic rows (cloned by client_form.js) -->
+    <template id="tpl-retirement-row">
+        <div class="dynamic-row" data-row-type="retirement">
+            <select name="retirement_owner[]" class="select-owner" required>
+                <option value="client_1">Client 1</option>
+                <option value="client_2" data-c2-only>Client 2</option>
+            </select>
+            <select name="retirement_type[]" required>
+                {% for t in retirement_types %}
+                <option value="{{ t }}">{{ t }}</option>
+                {% endfor %}
+            </select>
+            <input type="text" name="retirement_last4[]" placeholder="Last 4" maxlength="8"
+                   pattern="[0-9A-Za-z]{0,8}" class="input-last4">
+            <input type="text" name="retirement_label[]" placeholder="Label (optional)" maxlength="160">
+            <button type="button" class="btn-row-remove" aria-label="Remove">&times;</button>
+        </div>
+    </template>
+
+    <template id="tpl-nonret-row">
+        <div class="dynamic-row" data-row-type="nonret">
+            <select name="nonret_owner[]" class="select-owner" required>
+                <option value="client_1">Client 1</option>
+                <option value="client_2" data-c2-only>Client 2</option>
+                <option value="joint">Joint</option>
+            </select>
+            <select name="nonret_type[]" required>
+                {% for t in non_retirement_types %}
+                <option value="{{ t }}">{{ t }}</option>
+                {% endfor %}
+            </select>
+            <input type="text" name="nonret_last4[]" placeholder="Last 4" maxlength="8"
+                   pattern="[0-9A-Za-z]{0,8}" class="input-last4">
+            <input type="text" name="nonret_label[]" placeholder="Label (optional)" maxlength="160">
+            <button type="button" class="btn-row-remove" aria-label="Remove">&times;</button>
+        </div>
+    </template>
+
+    <template id="tpl-liability-row">
+        <div class="dynamic-row" data-row-type="liability">
+            <input type="text" name="liability_name[]" placeholder="Name (e.g., P Mortg)" required maxlength="120">
+            <input type="number" step="0.0001" min="0" name="liability_rate[]" placeholder="Rate (decimal, e.g. 0.065)">
+            <input type="number" step="0.01" min="0" name="liability_balance[]" placeholder="Initial balance (optional)">
+            <button type="button" class="btn-row-remove" aria-label="Remove">&times;</button>
+        </div>
+    </template>
+
+    <template id="tpl-insurance-row">
+        <div class="dynamic-row" data-row-type="insurance">
+            <input type="text" name="insurance_type[]" placeholder="Type (Home, Auto, Health...)" required maxlength="60">
+            <input type="number" step="0.01" min="0" name="insurance_deductible[]" placeholder="Deductible" required>
+            <button type="button" class="btn-row-remove" aria-label="Remove">&times;</button>
+        </div>
+    </template>
+
+    <!-- Section: Basic info -->
+    <details open class="form-section">
+        <summary><span class="section-title">Basic information</span></summary>
+        <div class="section-body grid-2">
+            <label class="field field-toggle">
+                <input type="checkbox" name="is_married" id="is_married"
+                       {% if values.is_married %}checked{% endif %}>
+                <span>Married (has Client 2)</span>
+            </label>
+            <label class="field field-toggle">
+                <input type="checkbox" name="has_trust" id="has_trust"
+                       {% if values.has_trust %}checked{% endif %}>
+                <span>Household has a Family Trust</span>
+            </label>
+            <label class="field field-wide">
+                <span>Property address / trust name</span>
+                <input type="text" name="property_address"
+                       value="{{ values.property_address }}" maxlength="255">
+            </label>
+            <label class="field">
+                <span>Transfer day of month <em>*</em></span>
+                <input type="number" name="transfer_day_of_month" min="1" max="31"
+                       value="{{ values.transfer_day_of_month }}" required>
+            </label>
+            <label class="field field-wide">
+                <span>Notes</span>
+                <textarea name="notes" rows="2">{{ values.notes }}</textarea>
+            </label>
+        </div>
+    </details>
+
+    <!-- Section: Client 1 -->
+    <details open class="form-section">
+        <summary><span class="section-title">Client 1</span></summary>
+        <div class="section-body grid-2">
+            <label class="field">
+                <span>Name <em>*</em></span>
+                <input type="text" name="c1_name" value="{{ values.c1.name }}" required maxlength="120">
+            </label>
+            <label class="field">
+                <span>DOB</span>
+                <input type="date" name="c1_dob" value="{{ values.c1.dob }}">
+            </label>
+            <label class="field">
+                <span>SSN (last 4)</span>
+                <input type="text" name="c1_ssn_last_4" value="{{ values.c1.ssn_last_4 }}"
+                       inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="1234">
+            </label>
+            <label class="field">
+                <span>Monthly salary <em>*</em></span>
+                <input type="number" name="c1_monthly_salary" step="0.01" min="0"
+                       value="{{ values.c1.monthly_salary }}" required>
+            </label>
+        </div>
+    </details>
+
+    <!-- Section: Client 2 (shown only when married) -->
+    <details open class="form-section client-2-section"
+             {% if not values.is_married %}hidden{% endif %}>
+        <summary><span class="section-title">Client 2</span></summary>
+        <div class="section-body grid-2">
+            <label class="field">
+                <span>Name <em>*</em></span>
+                <input type="text" name="c2_name" value="{{ values.c2.name }}" maxlength="120">
+            </label>
+            <label class="field">
+                <span>DOB</span>
+                <input type="date" name="c2_dob" value="{{ values.c2.dob }}">
+            </label>
+            <label class="field">
+                <span>SSN (last 4)</span>
+                <input type="text" name="c2_ssn_last_4" value="{{ values.c2.ssn_last_4 }}"
+                       inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="5678">
+            </label>
+            <label class="field">
+                <span>Monthly salary <em>*</em></span>
+                <input type="number" name="c2_monthly_salary" step="0.01" min="0"
+                       value="{{ values.c2.monthly_salary }}">
+            </label>
+        </div>
+    </details>
+
+    <!-- Section: Retirement accounts -->
+    <details open class="form-section">
+        <summary><span class="section-title">Retirement accounts</span></summary>
+        <div class="section-body">
+            <div class="rows-header rows-4col">
+                <span>Owner</span><span>Type</span><span>Last 4</span><span>Label</span><span></span>
+            </div>
+            <div class="rows-container" data-rows="retirement">
+                {% for row in values.retirement %}
+                <div class="dynamic-row" data-row-type="retirement">
+                    <select name="retirement_owner[]" class="select-owner" required>
+                        <option value="client_1" {% if row.owner == 'client_1' %}selected{% endif %}>Client 1</option>
+                        <option value="client_2" data-c2-only {% if row.owner == 'client_2' %}selected{% endif %}>Client 2</option>
+                    </select>
+                    <select name="retirement_type[]" required>
+                        {% for t in retirement_types %}
+                        <option value="{{ t }}" {% if row.type == t %}selected{% endif %}>{{ t }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="text" name="retirement_last4[]" placeholder="Last 4" maxlength="8"
+                           value="{{ row.last4 }}" pattern="[0-9A-Za-z]{0,8}" class="input-last4">
+                    <input type="text" name="retirement_label[]" placeholder="Label (optional)" maxlength="160"
+                           value="{{ row.label }}">
+                    <button type="button" class="btn-row-remove" aria-label="Remove">&times;</button>
+                </div>
+                {% endfor %}
+            </div>
+            <button type="button" class="btn btn-ghost btn-add" data-add-row="retirement">
+                + Add retirement account
+            </button>
+        </div>
+    </details>
+
+    <!-- Section: Non-retirement accounts -->
+    <details open class="form-section">
+        <summary><span class="section-title">Non-retirement accounts</span></summary>
+        <div class="section-body">
+            <div class="rows-header rows-4col">
+                <span>Owner</span><span>Type</span><span>Last 4</span><span>Label</span><span></span>
+            </div>
+            <div class="rows-container" data-rows="nonret">
+                {% for row in values.non_retirement %}
+                <div class="dynamic-row" data-row-type="nonret">
+                    <select name="nonret_owner[]" class="select-owner" required>
+                        <option value="client_1" {% if row.owner == 'client_1' %}selected{% endif %}>Client 1</option>
+                        <option value="client_2" data-c2-only {% if row.owner == 'client_2' %}selected{% endif %}>Client 2</option>
+                        <option value="joint" {% if row.owner == 'joint' %}selected{% endif %}>Joint</option>
+                    </select>
+                    <select name="nonret_type[]" required>
+                        {% for t in non_retirement_types %}
+                        <option value="{{ t }}" {% if row.type == t %}selected{% endif %}>{{ t }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="text" name="nonret_last4[]" placeholder="Last 4" maxlength="8"
+                           value="{{ row.last4 }}" pattern="[0-9A-Za-z]{0,8}" class="input-last4">
+                    <input type="text" name="nonret_label[]" placeholder="Label (optional)" maxlength="160"
+                           value="{{ row.label }}">
+                    <button type="button" class="btn-row-remove" aria-label="Remove">&times;</button>
+                </div>
+                {% endfor %}
+            </div>
+            <button type="button" class="btn btn-ghost btn-add" data-add-row="nonret">
+                + Add non-retirement account
+            </button>
+        </div>
+    </details>
+
+    <!-- Section: Liabilities -->
+    <details open class="form-section">
+        <summary><span class="section-title">Liabilities</span></summary>
+        <div class="section-body">
+            <div class="rows-header rows-3col">
+                <span>Name</span><span>Rate (decimal)</span><span>Initial balance</span><span></span>
+            </div>
+            <div class="rows-container" data-rows="liability">
+                {% for row in values.liabilities %}
+                <div class="dynamic-row" data-row-type="liability">
+                    <input type="text" name="liability_name[]" value="{{ row.name }}" required maxlength="120">
+                    <input type="number" step="0.0001" min="0" name="liability_rate[]" value="{{ row.rate }}">
+                    <input type="number" step="0.01" min="0" name="liability_balance[]" value="{{ row.balance }}">
+                    <button type="button" class="btn-row-remove" aria-label="Remove">&times;</button>
+                </div>
+                {% endfor %}
+            </div>
+            <button type="button" class="btn btn-ghost btn-add" data-add-row="liability">
+                + Add liability
+            </button>
+        </div>
+    </details>
+
+    <!-- Section: Insurance policies -->
+    <details open class="form-section">
+        <summary><span class="section-title">Insurance policies</span></summary>
+        <div class="section-body">
+            <div class="rows-header rows-2col">
+                <span>Type</span><span>Deductible</span><span></span>
+            </div>
+            <div class="rows-container" data-rows="insurance">
+                {% for row in values.insurance %}
+                <div class="dynamic-row" data-row-type="insurance">
+                    <input type="text" name="insurance_type[]" value="{{ row.type }}" required maxlength="60">
+                    <input type="number" step="0.01" min="0" name="insurance_deductible[]" value="{{ row.deductible }}" required>
+                    <button type="button" class="btn-row-remove" aria-label="Remove">&times;</button>
+                </div>
+                {% endfor %}
+            </div>
+            <button type="button" class="btn btn-ghost btn-add" data-add-row="insurance">
+                + Add insurance policy
+            </button>
+        </div>
+    </details>
+
+    <!-- Section: Static financials -->
+    <details open class="form-section">
+        <summary><span class="section-title">Static financials</span></summary>
+        <div class="section-body grid-2">
+            <label class="field">
+                <span>Agreed monthly outflow <em>*</em></span>
+                <input type="number" step="0.01" min="0" name="agreed_monthly_outflow"
+                       value="{{ values.agreed_monthly_outflow }}" required>
+            </label>
+            <label class="field">
+                <span>Private reserve target override <span class="muted">(optional)</span></span>
+                <input type="number" step="0.01" min="0" name="private_reserve_target_override"
+                       value="{{ values.private_reserve_target_override }}">
+            </label>
+        </div>
+    </details>
+
+    <div class="form-actions">
+        <a class="btn btn-ghost" href="{{ url_for('clients.list_clients') }}">Cancel</a>
+        <button type="submit" class="btn btn-primary">
+            {% if editing %}Save changes{% else %}Create client{% endif %}
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/client_form.js') }}"></script>
+{% endblock %}

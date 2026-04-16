@@ -70,7 +70,7 @@ class Client(db.Model):
         return int(value)
 
     def person(self, role):
-        """Devuelve la Person con el role indicado, o None si no existe."""
+        """Return the Person with the given role, or None if missing."""
         target = role if isinstance(role, PersonRole) else PersonRole(role)
         return next((p for p in self.people if p.role == target), None)
 

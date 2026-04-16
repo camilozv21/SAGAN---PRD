@@ -6,7 +6,7 @@ def register_cli(app):
     @app.cli.command("db-init")
     @with_appcontext
     def db_init_command():
-        """Crea todas las tablas y siembra Sample Client + admin."""
+        """Create all tables and seed Sample Client + admin user."""
         from migrations.init_db import init_database
 
         summary = init_database()
@@ -17,7 +17,7 @@ def register_cli(app):
     @app.cli.command("db-reset")
     @with_appcontext
     def db_reset_command():
-        """DROP todas las tablas y vuelve a sembrar. Destructivo."""
+        """DROP all tables and re-seed. Destructive."""
         from app import db
         from migrations.init_db import init_database
 

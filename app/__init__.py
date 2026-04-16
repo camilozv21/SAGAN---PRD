@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify
+from flask import Flask, jsonify, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
@@ -42,13 +42,19 @@ def create_app(config=None):
 
     db.init_app(app)
 
-    from app import models  # noqa: F401  (registra tablas con SQLAlchemy)
+    from app import models  # noqa: F401  (registers tables with SQLAlchemy)
     from app.cli import register_cli
+    from app.routes.clients import clients_bp
 
     register_cli(app)
+    app.register_blueprint(clients_bp)
 
     @app.route("/health")
     def health():
         return jsonify({"status": "ok"})
+
+    @app.route("/")
+    def root():
+        return redirect(url_for("clients.list_clients"))
 
     return app

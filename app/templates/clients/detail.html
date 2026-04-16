@@ -1,0 +1,193 @@
+{% extends "base/base.html" %}
+
+{% block title %}{{ display_name }} &mdash; AW{% endblock %}
+
+{% macro person_card(label, person) %}
+<div class="info-card">
+    <h3>{{ label }}</h3>
+    {% if person %}
+    <dl class="info-list">
+        <dt>Name</dt><dd>{{ person.name }}</dd>
+        <dt>DOB</dt>
+        <dd>{% if person.dob %}{{ person.dob.strftime('%Y-%m-%d') }}{% else %}<span class="muted">&mdash;</span>{% endif %}</dd>
+        <dt>SSN</dt>
+        <dd>{% if person.ssn_last_4 %}***-**-{{ person.ssn_last_4 }}{% else %}<span class="muted">&mdash;</span>{% endif %}</dd>
+        <dt>Monthly salary</dt>
+        <dd>${{ '{:,.2f}'.format(person.monthly_salary) }}</dd>
+    </dl>
+    {% else %}
+    <p class="muted">No information.</p>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{% macro account_row(a) %}
+<li class="account-item">
+    <div class="account-line">
+        <strong>{{ a.type }}</strong>
+        {% if a.account_number_last_4 %}
+        <span class="muted">&middot;&middot; {{ a.account_number_last_4 }}</span>
+        {% endif %}
+        <span class="badge badge-owner owner-{{ a.owner.value }}">
+            {% if a.owner.value == 'client_1' %}C1
+            {% elif a.owner.value == 'client_2' %}C2
+            {% else %}Joint{% endif %}
+        </span>
+    </div>
+    {% if a.label %}
+    <div class="muted small">{{ a.label }}</div>
+    {% endif %}
+</li>
+{% endmacro %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>{{ display_name }}</h1>
+        <div class="subtle">
+            {% if client.is_married %}
+            <span class="badge badge-married">Married</span>
+            {% else %}
+            <span class="badge badge-single">Single</span>
+            {% endif %}
+            {% if client.property_address %}
+            &middot; {{ client.property_address }}
+            {% endif %}
+        </div>
+    </div>
+    <div class="header-actions">
+        <a class="btn btn-ghost" href="{{ url_for('clients.list_clients') }}">&larr; Back</a>
+        <a class="btn btn-primary" href="{{ url_for('clients.edit_client', client_id=client.id) }}">Edit</a>
+        <form class="inline-form" method="post"
+              action="{{ url_for('clients.delete_client', client_id=client.id) }}"
+              onsubmit="return confirm('Delete {{ display_name|e }} and all associated data?');">
+            <button type="submit" class="btn btn-danger-ghost">Delete</button>
+        </form>
+    </div>
+</div>
+
+<section class="detail-section">
+    <h2>Basic information</h2>
+    <dl class="info-list info-list-horizontal">
+        <dt>Transfer day</dt>
+        <dd>Day {{ client.transfer_day_of_month }} of each month</dd>
+        <dt>Agreed monthly outflow</dt>
+        <dd>
+            {% if client.static_financials %}
+            ${{ '{:,.2f}'.format(client.static_financials.agreed_monthly_outflow) }}
+            {% else %}
+            <span class="muted">&mdash;</span>
+            {% endif %}
+        </dd>
+        <dt>Private reserve override</dt>
+        <dd>
+            {% if client.static_financials and client.static_financials.private_reserve_target_override is not none %}
+            ${{ '{:,.2f}'.format(client.static_financials.private_reserve_target_override) }}
+            {% else %}
+            <span class="muted">auto (6x outflow + deductibles)</span>
+            {% endif %}
+        </dd>
+    </dl>
+    {% if client.notes %}
+    <div class="notes-box">{{ client.notes }}</div>
+    {% endif %}
+</section>
+
+<section class="detail-section grid-2">
+    {{ person_card('Client 1', client.person(PersonRole.CLIENT_1)) }}
+    {% if client.is_married %}
+    {{ person_card('Client 2', client.person(PersonRole.CLIENT_2)) }}
+    {% endif %}
+</section>
+
+<section class="detail-section">
+    <h2>Retirement accounts</h2>
+    {% if retirement %}
+    <ul class="account-list">
+        {% for a in retirement %}{{ account_row(a) }}{% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">No retirement accounts.</p>
+    {% endif %}
+</section>
+
+<section class="detail-section">
+    <h2>Non-retirement accounts</h2>
+    {% if non_retirement %}
+    <ul class="account-list">
+        {% for a in non_retirement %}{{ account_row(a) }}{% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">No non-retirement accounts.</p>
+    {% endif %}
+</section>
+
+<section class="detail-section">
+    <h2>Trust</h2>
+    {% if trust_accounts %}
+    <ul class="account-list">
+        {% for a in trust_accounts %}
+        <li class="account-item">
+            <strong>{{ a.label or 'Family Trust' }}</strong>
+            <div class="muted small">Joint &middot; category: trust</div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">No trust configured.</p>
+    {% endif %}
+</section>
+
+<section class="detail-section">
+    <h2>Liabilities</h2>
+    {% if client.liabilities %}
+    <table class="data-table">
+        <thead>
+            <tr><th>Name</th><th>Rate</th><th>Balance</th><th>As of</th></tr>
+        </thead>
+        <tbody>
+            {% for l in client.liabilities %}
+            <tr>
+                <td>{{ l.name }}</td>
+                <td>
+                    {% if l.interest_rate is not none %}
+                    {{ '{:.2%}'.format(l.interest_rate|float) }}
+                    {% else %}
+                    <span class="muted">&mdash;</span>
+                    {% endif %}
+                </td>
+                <td>${{ '{:,.2f}'.format(l.balance) }}</td>
+                <td>
+                    {% if l.as_of_date %}{{ l.as_of_date.strftime('%Y-%m-%d') }}
+                    {% else %}<span class="muted">&mdash;</span>{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="muted">No liabilities.</p>
+    {% endif %}
+</section>
+
+<section class="detail-section">
+    <h2>Insurance policies</h2>
+    {% if client.insurance_policies %}
+    <table class="data-table">
+        <thead>
+            <tr><th>Type</th><th>Deductible</th></tr>
+        </thead>
+        <tbody>
+            {% for p in client.insurance_policies %}
+            <tr>
+                <td>{{ p.type }}</td>
+                <td>${{ '{:,.2f}'.format(p.deductible) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="muted">No policies.</p>
+    {% endif %}
+</section>
+{% endblock %}

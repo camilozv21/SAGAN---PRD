@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}AW Client Report Portal{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/clients.css') }}">
     {% block head %}{% endblock %}
 </head>
 <body>
@@ -13,7 +14,7 @@
             <a href="/" class="brand">AW Client Report Portal</a>
             <nav class="main-nav">
                 {% block nav %}
-                <a href="/">Clients</a>
+                <a href="{{ url_for('clients.list_clients') }}">Clients</a>
                 {% endblock %}
             </nav>
         </div>
@@ -21,6 +22,15 @@
 
     <main class="site-main">
         <div class="container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="flash-stack">
+                    {% for category, message in messages %}
+                    <div class="flash flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% endwith %}
             {% block content %}{% endblock %}
         </div>
     </main>

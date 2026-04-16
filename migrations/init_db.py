@@ -1,6 +1,6 @@
-"""Crea todas las tablas y siembra un Sample Client basado en tcc-sample.png.
+"""Create all tables and seed a Sample Client based on tcc-sample.png.
 
-Invocar vía `flask db-init` o `python -m migrations.init_db`.
+Invoke via `flask db-init` or `python -m migrations.init_db`.
 """
 from datetime import date
 from decimal import Decimal
@@ -30,14 +30,14 @@ def _d(value):
 
 
 def _seed_sample_client():
-    """Sample Client basado en docs/references/tcc-sample.png."""
+    """Sample Client based on docs/references/tcc-sample.png."""
 
-    existing = Client.query.filter_by(property_address="Sample Family Trust — 123 Placeholder Ln").first()
+    existing = Client.query.filter_by(property_address="Sample Family Trust - 123 Placeholder Ln").first()
     if existing:
         return existing
 
     client = Client(
-        property_address="Sample Family Trust — 123 Placeholder Ln",
+        property_address="Sample Family Trust - 123 Placeholder Ln",
         transfer_day_of_month=28,
         notes="Sample client seeded from tcc-sample.png.",
     )
@@ -78,7 +78,7 @@ def _seed_sample_client():
         ]
     )
 
-    # --- Liabilities (del TCC) -----------------------------------------
+    # --- Liabilities (from the TCC) ------------------------------------
     liabilities_spec = [
         ("P Mortg", _d("224218.24")),
         ("S Mortg", _d("107587.31")),
@@ -116,22 +116,22 @@ def _seed_sample_client():
         client.accounts.append(acct)
         return acct
 
-    # Retirement — Client 1
+    # Retirement - Client 1
     _acct(AccountOwner.CLIENT_1, AccountCategory.RETIREMENT, "Roth IRA", "Roth IRA", _d("11162.47"), cash=_d("316.00"))
     _acct(AccountOwner.CLIENT_1, AccountCategory.RETIREMENT, "IRA", "IRA", _d("0.00"))
 
-    # Retirement — Client 2
+    # Retirement - Client 2
     _acct(AccountOwner.CLIENT_2, AccountCategory.RETIREMENT, "IRA", "IRA", _d("37232.46"), cash=_d("914.00"))
     _acct(AccountOwner.CLIENT_2, AccountCategory.RETIREMENT, "401K", "401K", _d("70042.00"), outdated=True)
     _acct(AccountOwner.CLIENT_2, AccountCategory.RETIREMENT, "Roth IRA", "Roth IRA", _d("18885.92"), cash=_d("508.00"))
 
-    # Non-retirement — Client 1
+    # Non-retirement - Client 1
     _acct(AccountOwner.CLIENT_1, AccountCategory.NON_RETIREMENT, "Checking", "Wells Fargo Main Checking", _d("448.26"))
     _acct(AccountOwner.CLIENT_1, AccountCategory.NON_RETIREMENT, "Savings", "Wells Fargo Savings", _d("44024.00"))
     _acct(AccountOwner.CLIENT_1, AccountCategory.NON_RETIREMENT, "FICA", "StoneCastle FICA", _d("44067.78"))
     _acct(AccountOwner.CLIENT_1, AccountCategory.NON_RETIREMENT, "Brokerage", "Schwab JT TEN", _d("0.00"))
 
-    # Non-retirement — Client 2 (cuentas de flujo Pinnacle)
+    # Non-retirement - Client 2 (Pinnacle cashflow accounts)
     _acct(AccountOwner.CLIENT_2, AccountCategory.NON_RETIREMENT, "Checking", "Pinnacle Inflow", _d("990.00"))
     _acct(AccountOwner.CLIENT_2, AccountCategory.NON_RETIREMENT, "Checking", "Pinnacle Outflow", _d("12990.00"))
     _acct(AccountOwner.CLIENT_2, AccountCategory.NON_RETIREMENT, "Savings", "Pinnacle Private Reserve", _d("86788.00"))
@@ -161,7 +161,7 @@ def _seed_admin_user():
 
 
 def init_database():
-    """Crea tablas (idempotente) y siembra datos de muestra."""
+    """Create tables (idempotent) and seed sample data."""
     db.create_all()
     client = _seed_sample_client()
     user = _seed_admin_user()

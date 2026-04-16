@@ -1,0 +1,65 @@
+{% extends "base/base.html" %}
+
+{% block title %}Clients &mdash; AW Client Report Portal{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Clients</h1>
+    <a class="btn btn-primary" href="{{ url_for('clients.new_client') }}">+ New client</a>
+</div>
+
+{% if clients %}
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Household</th>
+            <th>Status</th>
+            <th>Last report</th>
+            <th class="actions-col">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for c in clients %}
+        <tr>
+            <td>
+                <a href="{{ url_for('clients.detail_client', client_id=c.id) }}" class="link-strong">
+                    {{ c.display_name }}
+                </a>
+            </td>
+            <td>
+                {% if c.is_married %}
+                <span class="badge badge-married">Married</span>
+                {% else %}
+                <span class="badge badge-single">Single</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if c.last_report_date %}
+                    {{ c.last_report_date.strftime('%Y-%m-%d') }}
+                {% else %}
+                    <span class="muted">&mdash;</span>
+                {% endif %}
+            </td>
+            <td class="actions-col">
+                <a class="btn btn-sm btn-ghost"
+                   href="{{ url_for('clients.detail_client', client_id=c.id) }}">View</a>
+                <a class="btn btn-sm btn-ghost"
+                   href="{{ url_for('clients.edit_client', client_id=c.id) }}">Edit</a>
+                <form class="inline-form"
+                      method="post"
+                      action="{{ url_for('clients.delete_client', client_id=c.id) }}"
+                      onsubmit="return confirm('Delete {{ c.display_name|e }} and all associated data?');">
+                    <button type="submit" class="btn btn-sm btn-danger-ghost">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+    <p>No clients yet.</p>
+    <a class="btn btn-primary" href="{{ url_for('clients.new_client') }}">Create the first one</a>
+</div>
+{% endif %}
+{% endblock %}
