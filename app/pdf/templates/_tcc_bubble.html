@@ -1,0 +1,9 @@
+<div class="bubble">
+  <div class="r-acct">ACCT #{% if a.last4 %} {{ a.last4 }}{% endif %}</div>
+  <div class="r-type">{{ a.type }}</div>
+  <div class="r-bal">{{ a.balance | currency(decimals=2) }}{% if a.is_outdated %}<span class="ast">*</span>{% endif %}</div>
+  <div class="r-date">{% if a.as_of_date %}a/o {{ a.as_of_date | short_date }}{% endif %}</div>
+  {% if a.cash_balance is not none %}
+  <div class="cash-sub">{{ a.cash_balance | currency(decimals=0) }} Cash</div>
+  {% endif %}
+</div>

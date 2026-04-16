@@ -43,7 +43,14 @@
            href="{{ url_for('reports.download_sacs', client_id=client.id, report_id=report.id) }}">
             Download SACS
         </a>
-        <span class="btn btn-ghost" aria-disabled="true" style="opacity:.55; pointer-events:none;">TCC PDF (coming soon)</span>
+        <a class="btn btn-primary"
+           href="{{ url_for('reports.download_tcc', client_id=client.id, report_id=report.id) }}">
+            Download TCC
+        </a>
+        <a class="btn btn-ghost"
+           href="{{ url_for('reports.download_both', client_id=client.id, report_id=report.id) }}">
+            Download Both (ZIP)
+        </a>
     </p>
 </section>
 {% endblock %}

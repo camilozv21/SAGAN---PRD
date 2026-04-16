@@ -29,7 +29,12 @@ from app.models import (
     QuarterlyReport,
 )
 from app.services.calculations import calculate_target
-from app.services.pdf_generator import generate_sacs_pdf, sacs_filename
+from app.services.pdf_generator import (
+    generate_sacs_pdf,
+    generate_tcc_pdf,
+    sacs_filename,
+    tcc_filename,
+)
 
 reports_bp = Blueprint("reports", __name__, url_prefix="/clients/<int:client_id>")
 
@@ -349,4 +354,52 @@ def download_sacs(client_id, report_id):
         pdf_bytes,
         mimetype="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@reports_bp.route("/reports/<int:report_id>/tcc.pdf", methods=["GET"])
+def download_tcc(client_id, report_id):
+    client = Client.query.get(client_id)
+    if client is None:
+        abort(404)
+    report = QuarterlyReport.query.get(report_id)
+    if report is None or report.client_id != client.id:
+        abort(404)
+
+    pdf_bytes = generate_tcc_pdf(report.id)
+    filename = tcc_filename(report)
+    return Response(
+        pdf_bytes,
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@reports_bp.route("/reports/<int:report_id>/both.zip", methods=["GET"])
+def download_both(client_id, report_id):
+    """Bundle SACS + TCC into a single ZIP download."""
+    import io
+    import zipfile
+
+    client = Client.query.get(client_id)
+    if client is None:
+        abort(404)
+    report = QuarterlyReport.query.get(report_id)
+    if report is None or report.client_id != client.id:
+        abort(404)
+
+    sacs_bytes = generate_sacs_pdf(report.id)
+    tcc_bytes = generate_tcc_pdf(report.id)
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr(sacs_filename(report), sacs_bytes)
+        zf.writestr(tcc_filename(report), tcc_bytes)
+    buffer.seek(0)
+
+    zip_name = f"Reports_{sacs_filename(report)[5:-4]}.zip"
+    return Response(
+        buffer.getvalue(),
+        mimetype="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{zip_name}"'},
     )
