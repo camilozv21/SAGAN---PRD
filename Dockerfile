@@ -26,10 +26,11 @@ RUN apt-get update \
 WORKDIR /app
 
 # Install Python deps in their own layer so application code edits don't
-# bust the pip cache.
+# bust the pip cache. We deliberately avoid `--mount=type=cache` because
+# Railway's BuildKit config rejects anonymous cache mounts (requires an
+# explicit id=) — the layer cache is enough.
 COPY requirements.txt ./
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install -r requirements.txt
+RUN pip install -r requirements.txt
 
 # Copy the rest of the application.
 COPY . .
