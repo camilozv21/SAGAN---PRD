@@ -4,7 +4,6 @@ dockerfilePath = "Dockerfile"
 
 [deploy]
 preDeployCommand = "flask db-init"
-startCommand = "gunicorn 'app:create_app()' --bind 0.0.0.0:${PORT:-8000} --workers 2 --access-logfile - --error-logfile -"
 healthcheckPath = "/health"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"
