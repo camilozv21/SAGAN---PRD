@@ -1,0 +1,47 @@
+{% extends "base/base.html" %}
+
+{% block title %}Report #{{ report.id }} &mdash; {{ display_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Report saved</h1>
+        <div class="subtle">{{ display_name }}</div>
+    </div>
+    <div class="header-actions">
+        <a class="btn btn-ghost"
+           href="{{ url_for('clients.detail_client', client_id=client.id) }}">&larr; Back to client</a>
+    </div>
+</div>
+
+<section class="detail-section">
+    <h2>Snapshot stored</h2>
+    <dl class="info-list info-list-horizontal">
+        <dt>Report ID</dt>
+        <dd>#{{ report.id }}</dd>
+        <dt>Report date</dt>
+        <dd>{{ report.report_date.strftime('%Y-%m-%d') }}</dd>
+        <dt>Generated at</dt>
+        <dd>{{ report.generated_at.strftime('%Y-%m-%d %H:%M') }} UTC</dd>
+        <dt>Inflow (C1 + C2)</dt>
+        <dd>
+            ${{ '{:,.2f}'.format(report.inflow_client_1_snapshot + report.inflow_client_2_snapshot) }}
+        </dd>
+        <dt>Outflow</dt>
+        <dd>${{ '{:,.2f}'.format(report.outflow_snapshot) }}</dd>
+        <dt>Trust value</dt>
+        <dd>${{ '{:,.2f}'.format(report.trust_value_snapshot) }}</dd>
+        <dt>Private reserve target</dt>
+        <dd>${{ '{:,.2f}'.format(report.target_snapshot) }}</dd>
+    </dl>
+</section>
+
+<section class="detail-section">
+    <h2>PDFs</h2>
+    <p class="muted">PDF generation arrives in Phase 4 &amp; 5. For now, a report snapshot has been persisted and its account balances are queryable.</p>
+    <p>
+        <span class="btn btn-ghost" aria-disabled="true" style="opacity:.55; pointer-events:none;">SACS PDF (coming soon)</span>
+        <span class="btn btn-ghost" aria-disabled="true" style="opacity:.55; pointer-events:none;">TCC PDF (coming soon)</span>
+    </p>
+</section>
+{% endblock %}

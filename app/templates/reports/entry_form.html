@@ -1,0 +1,330 @@
+{% extends "base/base.html" %}
+
+{% block title %}New report &mdash; {{ display_name }}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/reports.css') }}">
+{% endblock %}
+
+{% macro balance_fields(account, group) %}
+{%- set prefix = 'account_' ~ account.id -%}
+{%- set last_balance = account.hint.balance if account.hint else '' -%}
+{%- set last_cash = account.hint.cash_balance if account.hint else '' -%}
+{%- set last_as_of = account.hint.as_of_date if account.hint else '' -%}
+<div class="balance-row" data-account-id="{{ account.id }}"
+     data-group="{{ group }}">
+    <div class="balance-row-head">
+        <strong>{{ account.type }}</strong>
+        {% if account.last4 %}
+        <span class="muted small">&middot;&middot; {{ account.last4 }}</span>
+        {% endif %}
+        {% if account.label %}
+        <div class="muted small">{{ account.label }}</div>
+        {% endif %}
+    </div>
+    <label class="field">
+        <span>Balance <em>*</em></span>
+        <div class="input-with-action">
+            <input type="number" step="0.01" min="0" required
+                   name="{{ prefix }}_balance"
+                   value="{{ form_values.get(prefix ~ '_balance', '') }}"
+                   data-last-value="{{ last_balance }}"
+                   {% if last_balance %}placeholder="Last: {{ '{:,.2f}'.format(last_balance|float) }}"{% endif %}
+                   class="js-balance-input js-sum-input"
+                   data-sum-group="{{ group }}">
+            {% if last_balance %}
+            <button type="button" class="btn-use-last"
+                    data-target="{{ prefix }}_balance"
+                    data-value="{{ last_balance }}">use last</button>
+            {% endif %}
+        </div>
+    </label>
+    <label class="field">
+        <span>Cash</span>
+        <div class="input-with-action">
+            <input type="number" step="0.01" min="0"
+                   name="{{ prefix }}_cash"
+                   value="{{ form_values.get(prefix ~ '_cash', '') }}"
+                   data-last-value="{{ last_cash }}"
+                   {% if last_cash %}placeholder="Last: {{ '{:,.2f}'.format(last_cash|float) }}"{% endif %}>
+            {% if last_cash %}
+            <button type="button" class="btn-use-last"
+                    data-target="{{ prefix }}_cash"
+                    data-value="{{ last_cash }}">use last</button>
+            {% endif %}
+        </div>
+    </label>
+    <label class="field">
+        <span>As of <em>*</em></span>
+        <input type="date" required
+               name="{{ prefix }}_as_of"
+               value="{{ form_values.get(prefix ~ '_as_of', last_as_of or report_date_default) }}">
+    </label>
+    <label class="field field-toggle">
+        <input type="checkbox" name="{{ prefix }}_outdated"
+               {% if form_values.get(prefix ~ '_outdated') == 'on' %}checked{% endif %}>
+        <span>Info outdated (marks * in PDF)</span>
+    </label>
+</div>
+{% endmacro %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>New quarterly report</h1>
+        <div class="subtle">{{ display_name }}</div>
+    </div>
+    <div class="header-actions">
+        <a class="btn btn-ghost"
+           href="{{ url_for('clients.detail_client', client_id=client.id) }}">&larr; Cancel</a>
+    </div>
+</div>
+
+<form method="post"
+      action="{{ url_for('reports.create_report', client_id=client.id) }}"
+      id="report-entry-form"
+      class="report-entry-layout"
+      data-transfer-day="{{ transfer_day }}"
+      data-deductibles='{{ deductibles|tojson }}'
+      data-is-married="{{ 'true' if is_married else 'false' }}">
+
+    <div class="report-main">
+
+        <section class="form-section">
+            <header class="section-head">
+                <h2>Report</h2>
+                <p class="muted small">Date and cashflow inputs.</p>
+            </header>
+            <div class="section-body grid-2">
+                <label class="field">
+                    <span>Report date <em>*</em></span>
+                    <input type="date" name="report_date" required
+                           value="{{ form_values.get('report_date', report_date_default) }}">
+                </label>
+                <div></div>
+                <label class="field">
+                    <span>{{ c1_name }} &mdash; monthly salary <em>*</em></span>
+                    <div class="input-with-action">
+                        <input type="number" step="0.01" min="0" required
+                               name="salary_c1"
+                               value="{{ form_values.get('salary_c1', c1_salary_default) }}"
+                               data-last-value="{{ c1_salary_default }}"
+                               class="js-sacs-input" data-field="salary_c1">
+                        <button type="button" class="btn-use-last"
+                                data-target="salary_c1"
+                                data-value="{{ c1_salary_default }}">use last</button>
+                    </div>
+                </label>
+                {% if is_married %}
+                <label class="field">
+                    <span>{{ c2_name }} &mdash; monthly salary <em>*</em></span>
+                    <div class="input-with-action">
+                        <input type="number" step="0.01" min="0" required
+                               name="salary_c2"
+                               value="{{ form_values.get('salary_c2', c2_salary_default) }}"
+                               data-last-value="{{ c2_salary_default }}"
+                               class="js-sacs-input" data-field="salary_c2">
+                        <button type="button" class="btn-use-last"
+                                data-target="salary_c2"
+                                data-value="{{ c2_salary_default }}">use last</button>
+                    </div>
+                </label>
+                {% endif %}
+                <label class="field">
+                    <span>Monthly outflow <em>*</em></span>
+                    <div class="input-with-action">
+                        <input type="number" step="0.01" min="0" required
+                               name="outflow"
+                               value="{{ form_values.get('outflow', outflow_default) }}"
+                               data-last-value="{{ outflow_default }}"
+                               class="js-sacs-input" data-field="outflow">
+                        <button type="button" class="btn-use-last"
+                                data-target="outflow"
+                                data-value="{{ outflow_default }}">use last</button>
+                    </div>
+                </label>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <header class="section-head">
+                <h2>{{ c1_name }} &mdash; retirement accounts</h2>
+                <p class="muted small">Balances by account.</p>
+            </header>
+            <div class="section-body">
+                {% if c1_retirement %}
+                    {% for a in c1_retirement %}
+                        {{ balance_fields(a, 'c1_retirement') }}
+                    {% endfor %}
+                {% else %}
+                <p class="muted">No retirement accounts configured for {{ c1_name }}.</p>
+                {% endif %}
+            </div>
+        </section>
+
+        {% if is_married %}
+        <section class="form-section">
+            <header class="section-head">
+                <h2>{{ c2_name }} &mdash; retirement accounts</h2>
+                <p class="muted small">Balances by account.</p>
+            </header>
+            <div class="section-body">
+                {% if c2_retirement %}
+                    {% for a in c2_retirement %}
+                        {{ balance_fields(a, 'c2_retirement') }}
+                    {% endfor %}
+                {% else %}
+                <p class="muted">No retirement accounts configured for {{ c2_name }}.</p>
+                {% endif %}
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="form-section">
+            <header class="section-head">
+                <h2>Non-retirement accounts</h2>
+                <p class="muted small">Includes Private Reserve (FICA), brokerage, checking. Trust is entered separately below.</p>
+            </header>
+            <div class="section-body">
+                {% if non_retirement %}
+                    {% for a in non_retirement %}
+                        {{ balance_fields(a, 'non_retirement') }}
+                    {% endfor %}
+                {% else %}
+                <p class="muted">No non-retirement accounts configured.</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="form-section">
+            <header class="section-head">
+                <h2>Trust</h2>
+                <p class="muted small">Current market value (Zillow / appraisal).</p>
+            </header>
+            <div class="section-body">
+                {% if trust_accounts %}
+                    {% for a in trust_accounts %}
+                        {{ balance_fields(a, 'trust') }}
+                    {% endfor %}
+                {% else %}
+                <p class="muted">No trust configured for this client.</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="form-section">
+            <header class="section-head">
+                <h2>Liabilities</h2>
+                <p class="muted small">Tracked separately — never subtracted from net worth.</p>
+            </header>
+            <div class="section-body">
+                {% if liabilities %}
+                <div class="liability-grid">
+                    {% for l in liabilities %}
+                    {% set prefix = 'liability_' ~ l.id %}
+                    <div class="liability-row" data-liability-id="{{ l.id }}">
+                        <div class="balance-row-head">
+                            <strong>{{ l.name }}</strong>
+                        </div>
+                        <label class="field">
+                            <span>Balance <em>*</em></span>
+                            <div class="input-with-action">
+                                <input type="number" step="0.01" min="0" required
+                                       name="{{ prefix }}_balance"
+                                       value="{{ form_values.get(prefix ~ '_balance', '') }}"
+                                       data-last-value="{{ l.balance }}"
+                                       {% if l.balance %}placeholder="Last: {{ '{:,.2f}'.format(l.balance|float) }}"{% endif %}
+                                       class="js-sum-input" data-sum-group="liabilities">
+                                {% if l.balance %}
+                                <button type="button" class="btn-use-last"
+                                        data-target="{{ prefix }}_balance"
+                                        data-value="{{ l.balance }}">use last</button>
+                                {% endif %}
+                            </div>
+                        </label>
+                        <label class="field">
+                            <span>As of</span>
+                            <input type="date"
+                                   name="{{ prefix }}_as_of"
+                                   value="{{ form_values.get(prefix ~ '_as_of', l.as_of_date or report_date_default) }}">
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="muted">No liabilities configured for this client.</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <div class="form-actions">
+            <a class="btn btn-ghost"
+               href="{{ url_for('clients.detail_client', client_id=client.id) }}">Cancel</a>
+            <button type="submit" class="btn btn-primary" id="btn-generate"
+                    disabled>Generate report</button>
+        </div>
+
+    </div>
+
+    <aside class="calc-panel" id="calc-panel">
+        <h3 class="panel-title">Live calculations</h3>
+
+        <div class="panel-section">
+            <h4>SACS &mdash; monthly cashflow</h4>
+            <dl class="panel-list">
+                <dt>Inflow total</dt>
+                <dd><span data-calc="inflow">$0.00</span>
+                    <div class="panel-hint">
+                        <span data-calc="salary_c1_label">{{ c1_name }}</span>: <span data-calc="salary_c1">$0.00</span>
+                        {% if is_married %}
+                        &middot; <span data-calc="salary_c2_label">{{ c2_name }}</span>: <span data-calc="salary_c2">$0.00</span>
+                        {% endif %}
+                    </div>
+                </dd>
+                <dt>Outflow</dt>
+                <dd><span data-calc="outflow">$0.00</span></dd>
+                <dt>Excess</dt>
+                <dd class="calc-excess" data-calc-state="excess">
+                    <span data-calc="excess">$0.00</span>
+                </dd>
+                <dt>Transfer day</dt>
+                <dd>{{ transfer_day }}<sup>th</sup> of each month</dd>
+                <dt>Private reserve target</dt>
+                <dd>
+                    <span data-calc="target">$0.00</span>
+                    <div class="panel-hint">
+                        6 &times; outflow + deductibles
+                        (<span data-calc="deductibles_total">$0.00</span>)
+                    </div>
+                </dd>
+            </dl>
+        </div>
+
+        <div class="panel-section">
+            <h4>TCC &mdash; net worth</h4>
+            <dl class="panel-list">
+                <dt>{{ c1_name }} retirement</dt>
+                <dd><span data-calc="c1_retirement">$0.00</span></dd>
+                {% if is_married %}
+                <dt>{{ c2_name }} retirement</dt>
+                <dd><span data-calc="c2_retirement">$0.00</span></dd>
+                {% endif %}
+                <dt>Non-retirement <span class="muted small">(excl. trust)</span></dt>
+                <dd><span data-calc="non_retirement">$0.00</span></dd>
+                <dt>Trust</dt>
+                <dd><span data-calc="trust">$0.00</span></dd>
+                <dt class="grand-dt">Grand total</dt>
+                <dd class="grand-dd"><span data-calc="grand_total">$0.00</span></dd>
+                <dt class="liab-dt">Liabilities <span class="muted small">(separate)</span></dt>
+                <dd class="liab-dd"><span data-calc="liabilities_total">$0.00</span></dd>
+            </dl>
+        </div>
+
+        <p class="panel-note" id="panel-validation"></p>
+    </aside>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/report_entry.js') }}"></script>
+{% endblock %}

@@ -57,7 +57,9 @@
     </div>
     <div class="header-actions">
         <a class="btn btn-ghost" href="{{ url_for('clients.list_clients') }}">&larr; Back</a>
-        <a class="btn btn-primary" href="{{ url_for('clients.edit_client', client_id=client.id) }}">Edit</a>
+        <a class="btn btn-primary"
+           href="{{ url_for('reports.new_report', client_id=client.id) }}">+ New report</a>
+        <a class="btn btn-ghost" href="{{ url_for('clients.edit_client', client_id=client.id) }}">Edit</a>
         <form class="inline-form" method="post"
               action="{{ url_for('clients.delete_client', client_id=client.id) }}"
               onsubmit="return confirm('Delete {{ display_name|e }} and all associated data?');">
