@@ -101,4 +101,3 @@ migrations/            Schema migrations (added once models exist)
 ## Project Context
 
 See [CLAUDE.md](CLAUDE.md) for the full context guide: business rules, calculation formulas, PDF layout specs, and what is explicitly out of scope for V1.
-
