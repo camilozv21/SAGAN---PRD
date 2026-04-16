@@ -32,6 +32,7 @@ from app.models import (
     Liability,
     Person,
     PersonRole,
+    QuarterlyReport,
     StaticFinancials,
 )
 
@@ -615,6 +616,46 @@ def detail_client(client_id):
                       if a.category == AccountCategory.NON_RETIREMENT]
     trust_accounts = [a for a in client.accounts
                       if a.category == AccountCategory.TRUST]
+    reports = (
+        QuarterlyReport.query
+        .filter_by(client_id=client.id)
+        .order_by(QuarterlyReport.report_date.desc())
+        .all()
+    )
+    # Compute grand total for each report for the history table
+    from app.services.calculations import (
+        calculate_c1_retirement,
+        calculate_c2_retirement,
+        calculate_grand_total,
+        calculate_non_retirement_total,
+    )
+    from app.models import AccountBalance, AccountCategory as AC
+
+    report_rows = []
+    for r in reports:
+        balances = AccountBalance.query.filter_by(report_id=r.id).all()
+        c1_ret = sum(
+            float(b.balance) for b in balances
+            if b.account and b.account.category == AC.RETIREMENT
+            and b.account.owner.value == "client_1"
+        )
+        c2_ret = sum(
+            float(b.balance) for b in balances
+            if b.account and b.account.category == AC.RETIREMENT
+            and b.account.owner.value == "client_2"
+        )
+        non_ret = sum(
+            float(b.balance) for b in balances
+            if b.account and b.account.category == AC.NON_RETIREMENT
+        )
+        trust_val = float(r.trust_value_snapshot or 0)
+        grand = c1_ret + c2_ret + non_ret + trust_val
+        report_rows.append({
+            "id": r.id,
+            "report_date": r.report_date,
+            "grand_total": grand,
+        })
+
     return render_template(
         "clients/detail.html",
         client=client,
@@ -623,6 +664,7 @@ def detail_client(client_id):
         non_retirement=non_retirement,
         trust_accounts=trust_accounts,
         PersonRole=PersonRole,
+        reports=report_rows,
     )
 
 

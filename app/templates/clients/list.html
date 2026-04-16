@@ -3,6 +3,12 @@
 {% block title %}Clients &mdash; AW Client Report Portal{% endblock %}
 
 {% block content %}
+<nav class="breadcrumbs">
+    <span>Home</span>
+    <span class="bc-sep">/</span>
+    <span>Clients</span>
+</nav>
+
 <div class="page-header">
     <h1>Clients</h1>
     <a class="btn btn-primary" href="{{ url_for('clients.new_client') }}">+ New client</a>

@@ -487,6 +487,69 @@
     flex-wrap: wrap;
 }
 
+/* --- Breadcrumbs ----------------------------------------------------- */
+.breadcrumbs {
+    font-size: 0.82rem;
+    color: var(--brand-text-muted);
+    margin-bottom: 0.75rem;
+}
+
+.breadcrumbs a {
+    color: var(--brand-accent);
+    text-decoration: none;
+}
+
+.breadcrumbs a:hover {
+    text-decoration: underline;
+}
+
+.bc-sep {
+    margin: 0 0.35rem;
+    color: var(--brand-border);
+}
+
+/* --- PDF actions ----------------------------------------------------- */
+.pdf-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.btn-lg {
+    padding: 0.65rem 1.2rem;
+    font-size: 1rem;
+}
+
+.btn-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.pdf-spinner {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    color: var(--brand-text-muted);
+}
+
+.spinner {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--brand-border);
+    border-top-color: var(--brand-primary);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 /* --- Responsive ------------------------------------------------------ */
 @media (max-width: 680px) {
     .grid-2 { grid-template-columns: 1fr; }

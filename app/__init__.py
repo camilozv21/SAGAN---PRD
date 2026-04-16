@@ -44,10 +44,12 @@ def create_app(config=None):
 
     from app import models  # noqa: F401  (registers tables with SQLAlchemy)
     from app.cli import register_cli
+    from app.routes.admin import admin_bp
     from app.routes.clients import clients_bp
     from app.routes.reports import reports_bp
 
     register_cli(app)
+    app.register_blueprint(admin_bp)
     app.register_blueprint(clients_bp)
     app.register_blueprint(reports_bp)
 

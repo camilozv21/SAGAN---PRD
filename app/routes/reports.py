@@ -1,9 +1,13 @@
-"""Quarterly report entry (Phase 3).
+"""Quarterly report entry (Phase 3) and report detail/download (Phase 6).
 
 Routes:
-    GET  /clients/<id>/new-report       - balance entry form
-    POST /clients/<id>/reports          - persist snapshot
-    GET  /clients/<id>/reports/<rid>    - placeholder view (Phase 6)
+    GET  /clients/<id>/new-report              - balance entry form
+    POST /clients/<id>/reports                 - persist snapshot
+    GET  /clients/<id>/reports/<rid>           - report detail view
+    GET  /clients/<id>/reports/<rid>/sacs.pdf  - SACS PDF download
+    GET  /clients/<id>/reports/<rid>/tcc.pdf   - TCC PDF download
+    GET  /clients/<id>/reports/<rid>/both.zip  - ZIP of both PDFs
+    GET  /clients/<id>/reports/<rid>/form      - original form data (audit)
 """
 from datetime import date
 from decimal import Decimal, InvalidOperation
@@ -16,6 +20,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    session as flask_session,
     url_for,
 )
 
@@ -24,6 +29,7 @@ from app.models import (
     AccountBalance,
     AccountCategory,
     AccountOwner,
+    AuditLog,
     Client,
     PersonRole,
     QuarterlyReport,
@@ -35,6 +41,18 @@ from app.services.pdf_generator import (
     sacs_filename,
     tcc_filename,
 )
+
+
+def _log_audit(action, report_id=None, detail=None):
+    user_id = flask_session.get("user_id")
+    entry = AuditLog(
+        user_id=user_id,
+        report_id=report_id,
+        action=action,
+        detail=detail,
+    )
+    db.session.add(entry)
+    db.session.commit()
 
 reports_bp = Blueprint("reports", __name__, url_prefix="/clients/<int:client_id>")
 
@@ -275,6 +293,19 @@ def create_report(client_id):
     deductibles = [p.deductible for p in client.insurance_policies]
     target = calculate_target(outflow, deductibles)
 
+    liability_snap = [
+        {
+            "name": liab.name,
+            "balance": str(liability_inputs[liab.id]["balance"]),
+            "as_of_date": (
+                liability_inputs[liab.id]["as_of_date"].isoformat()
+                if liability_inputs[liab.id]["as_of_date"]
+                else (liab.as_of_date.isoformat() if liab.as_of_date else None)
+            ),
+        }
+        for liab in client.liabilities
+    ]
+
     report = QuarterlyReport(
         client_id=client.id,
         report_date=report_date,
@@ -283,7 +314,9 @@ def create_report(client_id):
         outflow_snapshot=outflow,
         trust_value_snapshot=trust_total,
         target_snapshot=target,
+        transfer_day_snapshot=client.transfer_day_of_month,
     )
+    report.set_liabilities_snapshot(liability_snap)
     db.session.add(report)
     db.session.flush()  # need report.id for FK on AccountBalance
 
@@ -317,6 +350,7 @@ def create_report(client_id):
             400,
         )
 
+    _log_audit("generate_report", report.id, f"Client: {_client_display_name(client)}")
     flash("Report saved.", "success")
     return redirect(
         url_for("reports.view_report", client_id=client.id, report_id=report.id)
@@ -331,11 +365,32 @@ def view_report(client_id, report_id):
     report = QuarterlyReport.query.get(report_id)
     if report is None or report.client_id != client.id:
         abort(404)
+    balances = AccountBalance.query.filter_by(report_id=report.id).all()
     return render_template(
-        "reports/view_placeholder.html",
+        "reports/detail.html",
         client=client,
         display_name=_client_display_name(client),
         report=report,
+        balances=balances,
+    )
+
+
+@reports_bp.route("/reports/<int:report_id>/form", methods=["GET"])
+def view_form_snapshot(client_id, report_id):
+    """Show the exact balance values that were submitted for this report."""
+    client = Client.query.get(client_id)
+    if client is None:
+        abort(404)
+    report = QuarterlyReport.query.get(report_id)
+    if report is None or report.client_id != client.id:
+        abort(404)
+    balances = AccountBalance.query.filter_by(report_id=report.id).all()
+    return render_template(
+        "reports/form_snapshot.html",
+        client=client,
+        display_name=_client_display_name(client),
+        report=report,
+        balances=balances,
     )
 
 
@@ -350,6 +405,7 @@ def download_sacs(client_id, report_id):
 
     pdf_bytes = generate_sacs_pdf(report.id)
     filename = sacs_filename(report)
+    _log_audit("download_sacs", report.id, filename)
     return Response(
         pdf_bytes,
         mimetype="application/pdf",
@@ -368,6 +424,7 @@ def download_tcc(client_id, report_id):
 
     pdf_bytes = generate_tcc_pdf(report.id)
     filename = tcc_filename(report)
+    _log_audit("download_tcc", report.id, filename)
     return Response(
         pdf_bytes,
         mimetype="application/pdf",
@@ -398,6 +455,7 @@ def download_both(client_id, report_id):
     buffer.seek(0)
 
     zip_name = f"Reports_{sacs_filename(report)[5:-4]}.zip"
+    _log_audit("download_zip", report.id, zip_name)
     return Response(
         buffer.getvalue(),
         mimetype="application/zip",

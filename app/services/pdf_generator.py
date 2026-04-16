@@ -110,6 +110,13 @@ def build_sacs_context(report) -> dict:
     private_reserve_balance = _find_balance_for_report(report, _is_fica_account)
     schwab_balance = _find_balance_for_report(report, _is_brokerage_account)
 
+    # Use snapshotted transfer day if available, else fall back to live client
+    transfer_day = (
+        report.transfer_day_snapshot
+        if report.transfer_day_snapshot is not None
+        else client.transfer_day_of_month
+    )
+
     return {
         "client_name": _display_name(client),
         "salary_c1": salary_c1,
@@ -118,7 +125,7 @@ def build_sacs_context(report) -> dict:
         "inflow_total": inflow_total,
         "outflow": outflow,
         "excess": excess,
-        "transfer_day": client.transfer_day_of_month,
+        "transfer_day": transfer_day,
         "private_reserve_balance": private_reserve_balance,
         "schwab_balance": schwab_balance,
         "report_date": report.report_date,
@@ -242,6 +249,24 @@ def group_tcc_accounts(report) -> dict:
         dates = [e["as_of_date"] for e in trust_entries if e["as_of_date"]]
         trust_as_of = max(dates) if dates else None
 
+    # Use snapshotted liabilities if available, else fall back to live data
+    liabilities_snap = report.get_liabilities_snapshot()
+    if liabilities_snap is not None:
+        liabilities_list = [
+            {
+                "name": item["name"],
+                "balance": Decimal(str(item.get("balance", 0))),
+                "as_of_date": (
+                    date.fromisoformat(item["as_of_date"])
+                    if item.get("as_of_date")
+                    else None
+                ),
+            }
+            for item in liabilities_snap
+        ]
+    else:
+        liabilities_list = [_liability_entry(l) for l in client.liabilities]
+
     return {
         "retirement_c1": retirement_c1,
         "retirement_c2": retirement_c2,
@@ -250,7 +275,7 @@ def group_tcc_accounts(report) -> dict:
         "trust_total": trust_total,
         "trust_as_of": trust_as_of,
         "trust_accounts": trust_entries,
-        "liabilities": [_liability_entry(l) for l in client.liabilities],
+        "liabilities": liabilities_list,
     }
 
 

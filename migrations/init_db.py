@@ -153,7 +153,7 @@ def _seed_admin_user():
     existing = User.query.filter_by(email=SAMPLE_ADMIN_EMAIL).first()
     if existing:
         return existing
-    user = User(email=SAMPLE_ADMIN_EMAIL, name="Admin")
+    user = User(email=SAMPLE_ADMIN_EMAIL, name="Admin", is_admin=True)
     user.set_password(SAMPLE_ADMIN_PASSWORD)
     db.session.add(user)
     db.session.flush()
@@ -163,6 +163,11 @@ def _seed_admin_user():
 def init_database():
     """Create tables (idempotent) and seed sample data."""
     db.create_all()
+    # Apply incremental migrations for columns added after initial schema.
+    # Must run before any queries so existing databases get new columns
+    # before SQLAlchemy tries to SELECT them.
+    from migrations.phase6_add_columns import migrate as phase6_migrate
+    phase6_migrate()
     client = _seed_sample_client()
     user = _seed_admin_user()
     db.session.commit()

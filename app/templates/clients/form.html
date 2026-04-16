@@ -7,6 +7,18 @@
 {% endblock %}
 
 {% block content %}
+<nav class="breadcrumbs">
+    <a href="{{ url_for('clients.list_clients') }}">Clients</a>
+    <span class="bc-sep">/</span>
+    {% if editing %}
+    <a href="{{ url_for('clients.detail_client', client_id=client.id) }}">{{ values.c1.name or 'Client' }}</a>
+    <span class="bc-sep">/</span>
+    <span>Edit</span>
+    {% else %}
+    <span>New client</span>
+    {% endif %}
+</nav>
+
 <div class="page-header">
     <h1>{% if editing %}Edit client{% else %}New client{% endif %}</h1>
     <a class="btn btn-ghost" href="{{ url_for('clients.list_clients') }}">&larr; Back to list</a>

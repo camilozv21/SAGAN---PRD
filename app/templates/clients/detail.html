@@ -41,6 +41,12 @@
 {% endmacro %}
 
 {% block content %}
+<nav class="breadcrumbs">
+    <a href="{{ url_for('clients.list_clients') }}">Clients</a>
+    <span class="bc-sep">/</span>
+    <span>{{ display_name }}</span>
+</nav>
+
 <div class="page-header">
     <div>
         <h1>{{ display_name }}</h1>
@@ -169,6 +175,46 @@
     </table>
     {% else %}
     <p class="muted">No liabilities.</p>
+    {% endif %}
+</section>
+
+<section class="detail-section">
+    <h2>Reports history</h2>
+    {% if reports %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Grand total</th>
+                <th class="actions-col">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in reports %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('reports.view_report', client_id=client.id, report_id=r.id) }}" class="link-strong">
+                        {{ r.report_date.strftime('%Y-%m-%d') }}
+                    </a>
+                </td>
+                <td>${{ '{:,.2f}'.format(r.grand_total) }}</td>
+                <td class="actions-col">
+                    <a class="btn btn-sm btn-ghost"
+                       href="{{ url_for('reports.view_report', client_id=client.id, report_id=r.id) }}">View</a>
+                    <a class="btn btn-sm btn-ghost"
+                       href="{{ url_for('reports.download_sacs', client_id=client.id, report_id=r.id) }}">SACS</a>
+                    <a class="btn btn-sm btn-ghost"
+                       href="{{ url_for('reports.download_tcc', client_id=client.id, report_id=r.id) }}">TCC</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state" style="padding:1.5rem">
+        <p>No reports generated yet.</p>
+        <a class="btn btn-primary" href="{{ url_for('reports.new_report', client_id=client.id) }}">Generate first report</a>
+    </div>
     {% endif %}
 </section>
 

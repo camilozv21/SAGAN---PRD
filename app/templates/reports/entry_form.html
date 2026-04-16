@@ -69,6 +69,14 @@
 {% endmacro %}
 
 {% block content %}
+<nav class="breadcrumbs">
+    <a href="{{ url_for('clients.list_clients') }}">Clients</a>
+    <span class="bc-sep">/</span>
+    <a href="{{ url_for('clients.detail_client', client_id=client.id) }}">{{ display_name }}</a>
+    <span class="bc-sep">/</span>
+    <span>New report</span>
+</nav>
+
 <div class="page-header">
     <div>
         <h1>New quarterly report</h1>

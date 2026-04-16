@@ -1,0 +1,156 @@
+{% extends "base/base.html" %}
+
+{% block title %}Report {{ report.report_date.strftime('%Y-%m-%d') }} &mdash; {{ display_name }}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/reports.css') }}">
+{% endblock %}
+
+{% block content %}
+<nav class="breadcrumbs">
+    <a href="{{ url_for('clients.list_clients') }}">Clients</a>
+    <span class="bc-sep">/</span>
+    <a href="{{ url_for('clients.detail_client', client_id=client.id) }}">{{ display_name }}</a>
+    <span class="bc-sep">/</span>
+    <span>Report {{ report.report_date.strftime('%Y-%m-%d') }}</span>
+</nav>
+
+<div class="page-header">
+    <div>
+        <h1>{{ display_name }}</h1>
+        <div class="subtle">Report for {{ report.report_date.strftime('%B %d, %Y') }}</div>
+    </div>
+    <div class="header-actions">
+        <a class="btn btn-ghost"
+           href="{{ url_for('clients.detail_client', client_id=client.id) }}">&larr; Back to client</a>
+    </div>
+</div>
+
+{# --- Snapshot summary (read-only calc panel) --- #}
+<section class="detail-section">
+    <h2>Report snapshot</h2>
+    <dl class="info-list info-list-horizontal">
+        <dt>Report ID</dt>
+        <dd>#{{ report.id }}</dd>
+        <dt>Report date</dt>
+        <dd>{{ report.report_date.strftime('%Y-%m-%d') }}</dd>
+        <dt>Generated at</dt>
+        <dd>{{ report.generated_at.strftime('%Y-%m-%d %H:%M') }} UTC</dd>
+    </dl>
+</section>
+
+<section class="detail-section">
+    <h2>SACS totals</h2>
+    <dl class="info-list">
+        <dt>Client 1 salary</dt>
+        <dd>${{ '{:,.2f}'.format(report.inflow_client_1_snapshot) }}</dd>
+        <dt>Client 2 salary</dt>
+        <dd>${{ '{:,.2f}'.format(report.inflow_client_2_snapshot) }}</dd>
+        <dt>Total inflow</dt>
+        <dd>${{ '{:,.2f}'.format(report.inflow_client_1_snapshot + report.inflow_client_2_snapshot) }}</dd>
+        <dt>Monthly outflow</dt>
+        <dd>${{ '{:,.2f}'.format(report.outflow_snapshot) }}</dd>
+        <dt>Excess (inflow - outflow)</dt>
+        <dd>${{ '{:,.2f}'.format(report.inflow_client_1_snapshot + report.inflow_client_2_snapshot - report.outflow_snapshot) }}</dd>
+        <dt>Private reserve target</dt>
+        <dd>${{ '{:,.2f}'.format(report.target_snapshot) }}</dd>
+    </dl>
+</section>
+
+<section class="detail-section">
+    <h2>TCC totals</h2>
+    <dl class="info-list">
+        <dt>Trust value</dt>
+        <dd>${{ '{:,.2f}'.format(report.trust_value_snapshot) }}</dd>
+    </dl>
+    {% if balances %}
+    <h3 style="margin-top:1rem;font-size:0.9rem;color:var(--brand-text-muted)">Account balances used in this report</h3>
+    <table class="data-table" style="margin-top:0.5rem">
+        <thead>
+            <tr>
+                <th>Account</th>
+                <th>Owner</th>
+                <th>Category</th>
+                <th>Balance</th>
+                <th>Cash</th>
+                <th>As of</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for bal in balances %}
+            <tr>
+                <td>{{ bal.account.type }}{% if bal.account.label %} <span class="muted small">({{ bal.account.label }})</span>{% endif %}</td>
+                <td>
+                    {% if bal.account.owner.value == 'client_1' %}C1
+                    {% elif bal.account.owner.value == 'client_2' %}C2
+                    {% else %}Joint{% endif %}
+                </td>
+                <td>{{ bal.account.category.value|replace('_', ' ')|title }}</td>
+                <td>${{ '{:,.2f}'.format(bal.balance) }}</td>
+                <td>
+                    {% if bal.cash_balance is not none %}
+                    ${{ '{:,.2f}'.format(bal.cash_balance) }}
+                    {% else %}
+                    <span class="muted">&mdash;</span>
+                    {% endif %}
+                </td>
+                <td>{{ bal.as_of_date.strftime('%Y-%m-%d') if bal.as_of_date else '&mdash;'|safe }}</td>
+                <td>{% if bal.is_outdated %}<span style="color:var(--brand-danger)" title="Outdated">*</span>{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</section>
+
+{# --- PDF download buttons --- #}
+<section class="detail-section">
+    <h2>Download PDFs</h2>
+    <div class="pdf-actions">
+        <a class="btn btn-primary btn-lg js-pdf-download"
+           href="{{ url_for('reports.download_sacs', client_id=client.id, report_id=report.id) }}">
+            Download SACS PDF
+        </a>
+        <a class="btn btn-primary btn-lg js-pdf-download"
+           href="{{ url_for('reports.download_tcc', client_id=client.id, report_id=report.id) }}">
+            Download TCC PDF
+        </a>
+        <a class="btn btn-ghost btn-lg js-pdf-download"
+           href="{{ url_for('reports.download_both', client_id=client.id, report_id=report.id) }}">
+            Download Both (ZIP)
+        </a>
+        {# Canva stub — TODO: requires client confirmation before enabling #}
+        <span class="btn btn-ghost btn-lg btn-disabled" title="Pending confirmation with client — requires CANVA_API_KEY">
+            Export to Canva
+        </span>
+    </div>
+    <div class="pdf-spinner js-pdf-spinner" style="display:none">
+        <span class="spinner"></span> Generating PDF&hellip;
+    </div>
+</section>
+
+<section class="detail-section">
+    <a class="btn btn-ghost btn-sm"
+       href="{{ url_for('reports.view_form_snapshot', client_id=client.id, report_id=report.id) }}">
+        View original form data (audit)
+    </a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var links = document.querySelectorAll('.js-pdf-download');
+    var spinner = document.querySelector('.js-pdf-spinner');
+    links.forEach(function(link) {
+        link.addEventListener('click', function() {
+            if (spinner) spinner.style.display = 'flex';
+            setTimeout(function() {
+                if (spinner) spinner.style.display = 'none';
+            }, 5000);
+        });
+    });
+})();
+</script>
+{% endblock %}

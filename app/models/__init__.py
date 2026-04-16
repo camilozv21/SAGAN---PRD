@@ -4,6 +4,7 @@ from app.models.account import (
     AccountCategory,
     AccountOwner,
 )
+from app.models.audit_log import AuditLog
 from app.models.client import Client, Person, PersonRole, StaticFinancials
 from app.models.liability import InsurancePolicy, Liability
 from app.models.report import QuarterlyReport
@@ -14,6 +15,7 @@ __all__ = [
     "AccountBalance",
     "AccountCategory",
     "AccountOwner",
+    "AuditLog",
     "Client",
     "InsurancePolicy",
     "Liability",

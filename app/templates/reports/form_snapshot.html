@@ -1,0 +1,82 @@
+{% extends "base/base.html" %}
+
+{% block title %}Form Data &mdash; Report {{ report.report_date.strftime('%Y-%m-%d') }}{% endblock %}
+
+{% block content %}
+<nav class="breadcrumbs">
+    <a href="{{ url_for('clients.list_clients') }}">Clients</a>
+    <span class="bc-sep">/</span>
+    <a href="{{ url_for('clients.detail_client', client_id=client.id) }}">{{ display_name }}</a>
+    <span class="bc-sep">/</span>
+    <a href="{{ url_for('reports.view_report', client_id=client.id, report_id=report.id) }}">Report {{ report.report_date.strftime('%Y-%m-%d') }}</a>
+    <span class="bc-sep">/</span>
+    <span>Original form data</span>
+</nav>
+
+<div class="page-header">
+    <div>
+        <h1>Original form data</h1>
+        <div class="subtle">{{ display_name }} &mdash; Report {{ report.report_date.strftime('%Y-%m-%d') }}</div>
+    </div>
+    <div class="header-actions">
+        <a class="btn btn-ghost"
+           href="{{ url_for('reports.view_report', client_id=client.id, report_id=report.id) }}">&larr; Back to report</a>
+    </div>
+</div>
+
+<section class="detail-section">
+    <h2>Snapshot values</h2>
+    <dl class="info-list">
+        <dt>Client 1 monthly salary</dt>
+        <dd>${{ '{:,.2f}'.format(report.inflow_client_1_snapshot) }}</dd>
+        <dt>Client 2 monthly salary</dt>
+        <dd>${{ '{:,.2f}'.format(report.inflow_client_2_snapshot) }}</dd>
+        <dt>Monthly outflow</dt>
+        <dd>${{ '{:,.2f}'.format(report.outflow_snapshot) }}</dd>
+        <dt>Trust value</dt>
+        <dd>${{ '{:,.2f}'.format(report.trust_value_snapshot) }}</dd>
+        <dt>Private reserve target</dt>
+        <dd>${{ '{:,.2f}'.format(report.target_snapshot) }}</dd>
+    </dl>
+</section>
+
+<section class="detail-section">
+    <h2>Account balances (as submitted)</h2>
+    {% if balances %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Account</th>
+                <th>Label</th>
+                <th>Owner</th>
+                <th>Category</th>
+                <th>Balance</th>
+                <th>Cash balance</th>
+                <th>As of</th>
+                <th>Outdated?</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for bal in balances %}
+            <tr>
+                <td>{{ bal.account.type }}</td>
+                <td>{{ bal.account.label or '' }}</td>
+                <td>{{ bal.account.owner.value|replace('_', ' ')|title }}</td>
+                <td>{{ bal.account.category.value|replace('_', ' ')|title }}</td>
+                <td>${{ '{:,.2f}'.format(bal.balance) }}</td>
+                <td>
+                    {% if bal.cash_balance is not none %}
+                    ${{ '{:,.2f}'.format(bal.cash_balance) }}
+                    {% else %}&mdash;{% endif %}
+                </td>
+                <td>{{ bal.as_of_date.strftime('%Y-%m-%d') if bal.as_of_date else '&mdash;' }}</td>
+                <td>{% if bal.is_outdated %}Yes{% else %}No{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="muted">No account balances recorded for this report.</p>
+    {% endif %}
+</section>
+{% endblock %}

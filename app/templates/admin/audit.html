@@ -1,0 +1,62 @@
+{% extends "base/base.html" %}
+
+{% block title %}Audit Log &mdash; AW Admin{% endblock %}
+
+{% block content %}
+<nav class="breadcrumbs">
+    <a href="{{ url_for('clients.list_clients') }}">Home</a>
+    <span class="bc-sep">/</span>
+    <span>Admin</span>
+    <span class="bc-sep">/</span>
+    <span>Audit log</span>
+</nav>
+
+<div class="page-header">
+    <h1>Audit log</h1>
+</div>
+
+{% if logs %}
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Timestamp</th>
+            <th>User</th>
+            <th>Action</th>
+            <th>Report</th>
+            <th>Detail</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for log in logs %}
+        <tr>
+            <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</td>
+            <td>
+                {% if log.user %}
+                {{ log.user.name or log.user.email }}
+                {% else %}
+                <span class="muted">unknown</span>
+                {% endif %}
+            </td>
+            <td>
+                <span class="badge">{{ log.action }}</span>
+            </td>
+            <td>
+                {% if log.report %}
+                <a href="{{ url_for('reports.view_report', client_id=log.report.client_id, report_id=log.report.id) }}">
+                    #{{ log.report.id }}
+                </a>
+                {% else %}
+                <span class="muted">&mdash;</span>
+                {% endif %}
+            </td>
+            <td>{{ log.detail or '' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+    <p>No audit entries yet.</p>
+</div>
+{% endif %}
+{% endblock %}
