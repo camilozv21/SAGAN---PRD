@@ -41,9 +41,11 @@ COPY . .
 # This is an internal tool for 3 users behind Railway auth — root is fine.
 RUN mkdir -p /data
 
-ENV PORT=8000
+ENV PORT=8000 \
+    FLASK_APP=wsgi:app
 EXPOSE 8000
 
-# Shell form so ${PORT} (set by Railway) is expanded. Railway's startCommand
-# in railway.toml overrides this CMD with `flask db-init && gunicorn ...`.
+# Shell form so ${PORT} (set by Railway) is expanded. Railway overrides this
+# CMD via railway.toml (preDeployCommand runs `flask db-init`, startCommand
+# runs gunicorn).
 CMD gunicorn "app:create_app()" --bind "0.0.0.0:${PORT}" --workers 2 --access-logfile - --error-logfile -
